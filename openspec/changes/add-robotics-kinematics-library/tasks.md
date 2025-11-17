@@ -17,9 +17,20 @@ This document outlines the implementation tasks in dependency order. Each task s
 - [ ] Add DaQP submodule to third_party/daqp
 - [ ] Add nanobind submodule to third_party/nanobind
 - [ ] Add googletest submodule to third_party/googletest
+- [ ] Add spdlog submodule to third_party/spdlog
 - [ ] Verify all submodules checkout correctly
 
-### 3. Create Root CMakeLists.txt
+### 3. Setup Logging Infrastructure with spdlog
+- [ ] Add spdlog submodule to third_party/spdlog (if not already added)
+- [ ] Create include/urdfx/logging.h header with logging macros
+- [ ] Configure spdlog logger with appropriate sinks (console, file)
+- [ ] Set default log level (INFO) and allow runtime configuration
+- [ ] Create logging utility functions (setLogLevel, setLogFile)
+- [ ] Add spdlog dependency to CMakeLists.txt
+- [ ] Write unit tests for logging functionality
+- [ ] Document logging usage in code comments
+
+### 4. Create Root CMakeLists.txt
 - [ ] Set project name, version, and C++20 standard
 - [ ] Configure compiler flags (warnings, optimizations)
 - [ ] Add options for BUILD_TESTING, BUILD_PYTHON_BINDINGS, BUILD_WASM
@@ -27,15 +38,16 @@ This document outlines the implementation tasks in dependency order. Each task s
 - [ ] Add subdirectories (src, tests, python, wasm)
 - [ ] Configure installation rules and export targets
 
-### 4. Create Dependencies CMake Module
+### 5. Create Dependencies CMake Module
 - [ ] Create cmake/Dependencies.cmake
 - [ ] Add logic to find or build Eigen from submodule
 - [ ] Add logic to find or build pugixml from submodule
 - [ ] Add logic to find or build CppAD from submodule
 - [ ] Add logic to find or build DaQP from submodule
+- [ ] Add logic to find or build spdlog from submodule
 - [ ] Handle conditional dependencies (nanobind only if BUILD_PYTHON_BINDINGS)
 
-### 5. Create Setup Scripts
+### 6. Create Setup Scripts
 - [ ] Write scripts/setup.sh for Linux/macOS
 - [ ] Install CMake, Python, Node.js if missing
 - [ ] Install Emscripten SDK to third_party/emsdk
@@ -44,14 +56,14 @@ This document outlines the implementation tasks in dependency order. Each task s
 
 ## Phase 2: Core C++ Library - URDF Parsing
 
-### 6. Design Robot Model Data Structures
+### 7. Design Robot Model Data Structures
 - [ ] Define Link class (name, inertial, visual, collision)
 - [ ] Define Joint class (name, type, axis, limits, origin, parent, child)
 - [ ] Define Robot class (name, links, joints, root_link)
 - [ ] Define Transform class (wrapper around Eigen::Isometry3d)
 - [ ] Implement accessors and utility methods
 
-### 7. Implement URDF Parser
+### 8. Implement URDF Parser
 - [ ] Create URDFParser class using pugixml
 - [ ] Implement parseURDFFile(path) method
 - [ ] Implement parseURDFString(content) method
@@ -61,13 +73,13 @@ This document outlines the implementation tasks in dependency order. Each task s
 - [ ] Build kinematic tree structure
 - [ ] Validate robot model (check for disconnected links, invalid limits)
 
-### 8. Implement Error Handling
+### 9. Implement Error Handling
 - [ ] Define URDFParseException class
 - [ ] Add descriptive error messages with line numbers
 - [ ] Handle missing required tags gracefully
-- [ ] Add logging for warnings (e.g., disconnected links)
+- [ ] Add logging for warnings using spdlog (e.g., disconnected links)
 
-### 9. Write URDF Parsing Tests
+### 10. Write URDF Parsing Tests
 - [ ] Create test fixture with UR5e URDF
 - [ ] Test successful parsing of valid URDF
 - [ ] Test error handling for malformed URDF
@@ -78,14 +90,14 @@ This document outlines the implementation tasks in dependency order. Each task s
 
 ## Phase 3: Core C++ Library - Forward Kinematics
 
-### 10. Implement Kinematic Chain Builder
+### 11. Implement Kinematic Chain Builder
 - [ ] Create KinematicChain class
 - [ ] Implement buildChain(robot, end_link) method
 - [ ] Traverse from end_link to root
 - [ ] Store ordered list of joints and transformations
 - [ ] Pre-compute static transformations
 
-### 11. Implement Forward Kinematics
+### 12. Implement Forward Kinematics
 - [ ] Create ForwardKinematics class
 - [ ] Implement compute(joint_angles) → Transform
 - [ ] Use Eigen for matrix operations
@@ -93,13 +105,13 @@ This document outlines the implementation tasks in dependency order. Each task s
 - [ ] Implement bounds checking (optional)
 - [ ] Optimize for repeated calls (pre-allocate matrices)
 
-### 12. Implement Pose Representations
+### 13. Implement Pose Representations
 - [ ] Implement asMatrix() → Eigen::Matrix4d
 - [ ] Implement asPositionQuaternion() → (Vector3d, Quaterniond)
 - [ ] Implement asPositionEuler() → (Vector3d, Vector3d)
 - [ ] Ensure quaternion normalization
 
-### 13. Write Forward Kinematics Tests
+### 14. Write Forward Kinematics Tests
 - [ ] Test FK at zero configuration
 - [ ] Test FK at various configurations
 - [ ] Compare with analytical solutions (UR5e known poses)
@@ -111,13 +123,13 @@ This document outlines the implementation tasks in dependency order. Each task s
 
 ## Phase 4: Core C++ Library - Jacobian Computation
 
-### 14. Integrate CppAD
+### 15. Integrate CppAD
 - [ ] Create ADForwardKinematics (CppAD-compatible FK)
 - [ ] Use AD<double> types for joint angles
 - [ ] Implement FK with CppAD tape recording
 - [ ] Verify AD FK matches regular FK
 
-### 15. Implement Jacobian Calculator
+### 16. Implement Jacobian Calculator
 - [ ] Create JacobianCalculator class
 - [ ] Create CppAD tape during initialization
 - [ ] Implement compute(joint_angles) → Eigen::MatrixXd
@@ -125,13 +137,13 @@ This document outlines the implementation tasks in dependency order. Each task s
 - [ ] Support analytic (spatial) Jacobian
 - [ ] Implement conversion between Jacobian types
 
-### 16. Implement Singularity Detection
+### 17. Implement Singularity Detection
 - [ ] Compute singular values of Jacobian
 - [ ] Implement isSingular(threshold) method
 - [ ] Implement getManipulability() method
 - [ ] Add condition number calculation
 
-### 17. Write Jacobian Tests
+### 18. Write Jacobian Tests
 - [ ] Test Jacobian at zero configuration
 - [ ] Compare CppAD Jacobian with numerical differentiation
 - [ ] Verify geometric vs analytic Jacobian relationship
@@ -143,13 +155,13 @@ This document outlines the implementation tasks in dependency order. Each task s
 
 ## Phase 5: Core C++ Library - Inverse Kinematics
 
-### 18. Integrate DaQP QP Solver
+### 19. Integrate DaQP QP Solver
 - [ ] Study DaQP API and examples
 - [ ] Create wrapper for DaQP solver initialization
 - [ ] Implement QP formulation helper functions
 - [ ] Test basic QP solving with simple problems
 
-### 19. Implement SQP IK Solver
+### 20. Implement SQP IK Solver
 - [ ] Create IKSolver abstract base class
 - [ ] Create SQPIKSolver implementation
 - [ ] Implement solve(target, initial_guess) method
@@ -161,19 +173,19 @@ This document outlines the implementation tasks in dependency order. Each task s
 - [ ] Check convergence criteria
 - [ ] Return solution and status
 
-### 20. Implement IK Solver Configuration
+### 21. Implement IK Solver Configuration
 - [ ] Add SolverConfig struct (tolerances, max_iterations, step_limits)
 - [ ] Implement setSolverConfig() method
 - [ ] Add methods for position-only and orientation-only IK
 - [ ] Implement warm-starting support
 
-### 21. Implement IK Diagnostics
+### 22. Implement IK Diagnostics
 - [ ] Create SolverStatus struct (converged, iterations, error, etc.)
 - [ ] Track convergence history (optional)
 - [ ] Provide detailed error reporting
 - [ ] Handle unreachable poses gracefully
 
-### 22. Write Inverse Kinematics Tests
+### 23. Write Inverse Kinematics Tests
 - [ ] Test IK for reachable poses
 - [ ] Test IK with warm start vs cold start
 - [ ] Test joint limit enforcement
@@ -187,13 +199,13 @@ This document outlines the implementation tasks in dependency order. Each task s
 
 ## Phase 6: Python Bindings
 
-### 23. Setup nanobind Build Configuration
+### 24. Setup nanobind Build Configuration
 - [ ] Create python/CMakeLists.txt
 - [ ] Configure nanobind with find_package or submodule
 - [ ] Define Python extension module target
 - [ ] Link against core urdfx library
 
-### 24. Implement Python Bindings
+### 25. Implement Python Bindings
 - [ ] Create python/src/bindings.cpp
 - [ ] Bind Robot class (from_urdf, from_urdf_string methods)
 - [ ] Bind ForwardKinematics class (compute method)
@@ -203,13 +215,13 @@ This document outlines the implementation tasks in dependency order. Each task s
 - [ ] Translate C++ exceptions to Python exceptions
 - [ ] Use snake_case naming for Python API
 
-### 25. Create Python Package Structure
+### 26. Create Python Package Structure
 - [ ] Create python/urdfx/__init__.py
 - [ ] Create setup.py with nanobind integration
 - [ ] Generate type stubs (.pyi files) for IDE support
 - [ ] Add pyproject.toml for modern Python packaging
 
-### 26. Write Python Tests
+### 27. Write Python Tests
 - [ ] Create python_tests/ directory
 - [ ] Setup pytest configuration
 - [ ] Test Robot loading from URDF
@@ -221,21 +233,21 @@ This document outlines the implementation tasks in dependency order. Each task s
 - [ ] Test NumPy array zero-copy
 - [ ] Run tests and verify all pass
 
-### 27. Create Python Documentation
+### 28. Create Python Documentation
 - [ ] Add docstrings to all bound functions
 - [ ] Create Python usage examples
 - [ ] Document installation instructions
 
 ## Phase 7: WebAssembly Bindings
 
-### 28. Setup Emscripten Build Configuration
+### 29. Setup Emscripten Build Configuration
 - [ ] Create wasm/CMakeLists.txt
 - [ ] Configure for Emscripten toolchain
 - [ ] Set Embind compilation flags
 - [ ] Configure optimization flags (-O3, SIMD)
 - [ ] Set output format (MODULARIZE=1)
 
-### 29. Implement WASM Bindings with Embind
+### 30. Implement WASM Bindings with Embind
 - [ ] Create wasm/src/bindings.cpp
 - [ ] Bind Robot class (fromURDFString method)
 - [ ] Bind ForwardKinematics class
@@ -244,12 +256,12 @@ This document outlines the implementation tasks in dependency order. Each task s
 - [ ] Convert C++ types to JavaScript-friendly formats
 - [ ] Implement explicit memory management (delete methods)
 
-### 30. Create TypeScript Definitions
+### 31. Create TypeScript Definitions
 - [ ] Create wasm/urdfx.d.ts with type declarations
 - [ ] Define interfaces for Robot, ForwardKinematics, etc.
 - [ ] Document method signatures and return types
 
-### 31. Build and Test WASM Module
+### 32. Build and Test WASM Module
 - [ ] Build WASM with Emscripten
 - [ ] Verify binary size (< 2MB uncompressed)
 - [ ] Create test HTML page for manual testing
@@ -258,7 +270,7 @@ This document outlines the implementation tasks in dependency order. Each task s
 - [ ] Verify no memory leaks
 - [ ] Measure performance in browser
 
-### 32. Write JavaScript Tests
+### 33. Write JavaScript Tests
 - [ ] Setup Jest for Node.js testing
 - [ ] Setup Puppeteer for browser testing
 - [ ] Test WASM module loading
@@ -270,20 +282,20 @@ This document outlines the implementation tasks in dependency order. Each task s
 
 ## Phase 8: Visualization Application
 
-### 33. Setup React + Vite Project
+### 34. Setup React + Vite Project
 - [ ] Initialize Vite project with React + TypeScript
 - [ ] Configure TypeScript with strict mode
 - [ ] Setup ESLint and Prettier
 - [ ] Install Three.js and @react-three/fiber
 - [ ] Install dependencies (e.g., @react-three/drei for helpers)
 
-### 34. Integrate urdfx WASM Module
+### 35. Integrate urdfx WASM Module
 - [ ] Copy built urdfx.js and urdfx.wasm to visualization/public/
 - [ ] Create WASM loader utility
 - [ ] Test module loading in React app
 - [ ] Handle loading states and errors
 
-### 35. Implement URDF Loader and Parser
+### 36. Implement URDF Loader and Parser
 - [ ] Create URDFLoader class
 - [ ] Parse URDF string and extract geometry
 - [ ] Load mesh files (OBJ format)
@@ -291,27 +303,27 @@ This document outlines the implementation tasks in dependency order. Each task s
 - [ ] Apply materials and colors
 - [ ] Build scene graph matching kinematic structure
 
-### 36. Implement Robot Renderer
+### 37. Implement Robot Renderer
 - [ ] Create RobotRenderer React component
 - [ ] Setup Three.js scene, camera, lights
 - [ ] Render loaded robot geometry
 - [ ] Implement joint transformations
 - [ ] Update robot pose based on joint angles
 
-### 37. Implement Joint Control UI
+### 38. Implement Joint Control UI
 - [ ] Create JointControlPanel component
 - [ ] Generate sliders for each joint
 - [ ] Respect joint limits in slider ranges
 - [ ] Update robot in real-time on slider change
 - [ ] Display current joint angle values
 
-### 38. Implement Forward Kinematics Mode
+### 39. Implement Forward Kinematics Mode
 - [ ] Integrate urdfx WASM FK computation
 - [ ] Compute and display end-effector pose
 - [ ] Render coordinate frame at end-effector
 - [ ] Display position and orientation in UI
 
-### 39. Implement Inverse Kinematics Mode
+### 40. Implement Inverse Kinematics Mode
 - [ ] Add IK mode toggle in UI
 - [ ] Implement end-effector gizmo (TransformControls)
 - [ ] Call urdfx WASM IK solver on gizmo drag
@@ -319,35 +331,35 @@ This document outlines the implementation tasks in dependency order. Each task s
 - [ ] Handle unreachable poses with visual feedback
 - [ ] Display IK solver status
 
-### 40. Implement Kinematic Information Display
+### 41. Implement Kinematic Information Display
 - [ ] Compute and display Jacobian condition number
 - [ ] Indicate singularities with color coding
 - [ ] Optionally render manipulability ellipsoid
 
-### 41. Implement Camera Controls
+### 42. Implement Camera Controls
 - [ ] Setup OrbitControls from @react-three/drei
 - [ ] Configure zoom, pan, and orbit
 - [ ] Set reasonable camera limits
 
-### 42. Implement URDF File Upload
+### 43. Implement URDF File Upload
 - [ ] Create file upload UI component
 - [ ] Handle file reading in browser
 - [ ] Parse uploaded URDF
 - [ ] Resolve mesh paths (relative to URDF)
 - [ ] Render uploaded robot
 
-### 43. Implement Responsive Layout
+### 44. Implement Responsive Layout
 - [ ] Create responsive CSS layout
 - [ ] Adapt UI for desktop and tablet sizes
 - [ ] Test on various screen resolutions
 
-### 44. Optimize Performance
+### 45. Optimize Performance
 - [ ] Profile rendering performance
 - [ ] Optimize FK/IK call frequency
 - [ ] Implement request animation frame batching
 - [ ] Ensure 60 FPS during interaction
 
-### 45. Write Visualization App Tests
+### 46. Write Visualization App Tests
 - [ ] Create Jest unit tests for components
 - [ ] Test URDF loading logic
 - [ ] Test joint angle calculations
@@ -355,29 +367,29 @@ This document outlines the implementation tasks in dependency order. Each task s
 - [ ] Test user interactions (slider, IK drag)
 - [ ] Run tests and verify all pass
 
-### 46. Create Visualization App Documentation
+### 47. Create Visualization App Documentation
 - [ ] Write user guide
 - [ ] Document keyboard shortcuts
 - [ ] Add in-app help modal
 
 ## Phase 9: Documentation and Examples
 
-### 47. Write C++ API Documentation
+### 48. Write C++ API Documentation
 - [ ] Add Doxygen comments to all public APIs
 - [ ] Generate API reference with Doxygen
 - [ ] Create usage examples (FK, IK, Jacobian)
 
-### 48. Write Python API Documentation
+### 49. Write Python API Documentation
 - [ ] Ensure all docstrings are complete
 - [ ] Create Sphinx documentation
 - [ ] Add Python usage examples
 
-### 49. Write JavaScript/WASM Documentation
+### 50. Write JavaScript/WASM Documentation
 - [ ] Document WASM module API
 - [ ] Create JavaScript usage examples
 - [ ] Add TypeScript example project
 
-### 50. Create Comprehensive README
+### 51. Create Comprehensive README
 - [ ] Write project overview
 - [ ] Add installation instructions (C++, Python, WASM)
 - [ ] Document build instructions for all platforms
@@ -385,7 +397,7 @@ This document outlines the implementation tasks in dependency order. Each task s
 - [ ] Link to detailed documentation
 - [ ] Add troubleshooting section
 
-### 51. Create CONTRIBUTING.md
+### 52. Create CONTRIBUTING.md
 - [ ] Document contribution guidelines
 - [ ] Explain code style and conventions
 - [ ] Describe PR process
@@ -393,7 +405,7 @@ This document outlines the implementation tasks in dependency order. Each task s
 
 ## Phase 10: Testing and CI/CD
 
-### 52. Setup Continuous Integration
+### 53. Setup Continuous Integration
 - [ ] Create .github/workflows/ci.yml
 - [ ] Configure builds for Linux, macOS, Windows
 - [ ] Run C++ tests on all platforms
@@ -401,19 +413,19 @@ This document outlines the implementation tasks in dependency order. Each task s
 - [ ] Build and test WASM module
 - [ ] Check code formatting (clang-format)
 
-### 53. Add Code Coverage
+### 54. Add Code Coverage
 - [ ] Configure coverage tools (gcov/lcov)
 - [ ] Add coverage reporting to CI
 - [ ] Set minimum coverage threshold
 
-### 54. Performance Benchmarking
+### 55. Performance Benchmarking
 - [ ] Create benchmark suite with Google Benchmark
 - [ ] Benchmark FK computation
 - [ ] Benchmark Jacobian computation
 - [ ] Benchmark IK solving
 - [ ] Track performance over time in CI
 
-### 55. Create Release Process
+### 56. Create Release Process
 - [ ] Setup semantic versioning
 - [ ] Create release checklist
 - [ ] Configure automated releases via GitHub Actions
@@ -421,32 +433,32 @@ This document outlines the implementation tasks in dependency order. Each task s
 
 ## Phase 11: Final Integration and Validation
 
-### 56. End-to-End Testing
+### 57. End-to-End Testing
 - [ ] Test complete pipeline: URDF → FK → Jacobian → IK
 - [ ] Test Python integration with real robot model
 - [ ] Test WASM integration in visualization app
 - [ ] Test installation from source
 - [ ] Test installation via pip (Python)
 
-### 57. Performance Validation
+### 58. Performance Validation
 - [ ] Verify FK < 1ms for 6-DOF robot
 - [ ] Verify IK < 10ms for typical poses
 - [ ] Verify WASM binary < 2MB
 - [ ] Verify visualization app > 30 FPS
 
-### 58. Documentation Review
+### 59. Documentation Review
 - [ ] Review all documentation for accuracy
 - [ ] Verify all links work
 - [ ] Check code examples compile and run
 - [ ] Get external review
 
-### 59. Security Audit
+### 60. Security Audit
 - [ ] Review URDF parsing for XML injection vulnerabilities
 - [ ] Check bounds on array accesses
 - [ ] Validate user inputs in visualization app
 - [ ] Run static analysis tools
 
-### 60. Prepare for Release
+### 61. Prepare for Release
 - [ ] Tag initial release (v1.0.0)
 - [ ] Create release notes
 - [ ] Update project website/repository
@@ -465,10 +477,11 @@ Each task should be considered complete when:
 
 ## Dependency Tracking
 
-- Tasks 1-5 must complete before any other work
-- Tasks 6-9 (URDF) must complete before Tasks 10-13 (FK)
-- Tasks 10-13 (FK) must complete before Tasks 14-17 (Jacobian)
-- Tasks 14-17 (Jacobian) must complete before Tasks 18-22 (IK)
-- Tasks 6-22 (Core Library) must complete before Tasks 23-32 (Bindings)
-- Tasks 28-32 (WASM) must complete before Tasks 33-46 (Visualization)
+- Tasks 1-6 must complete before any other work
+- Task 3 (spdlog logging) must complete before any C++ code writing
+- Tasks 7-10 (URDF) must complete before Tasks 11-14 (FK)
+- Tasks 11-14 (FK) must complete before Tasks 15-18 (Jacobian)
+- Tasks 15-18 (Jacobian) must complete before Tasks 19-23 (IK)
+- Tasks 7-23 (Core Library) must complete before Tasks 24-33 (Bindings)
+- Tasks 29-33 (WASM) must complete before Tasks 34-47 (Visualization)
 - Most tasks can proceed in parallel after Phase 5 completes

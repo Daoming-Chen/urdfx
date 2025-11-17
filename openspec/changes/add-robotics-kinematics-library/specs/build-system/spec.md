@@ -25,7 +25,7 @@ The system SHALL use git submodules for third-party C++ libraries.
 #### Scenario: Clone with submodules
 **Given** the urdfx git repository URL  
 **When** the user runs `git clone --recursive <url>`  
-**Then** all submodules are cloned: Eigen, pugixml, CppAD, DaQP, nanobind, googletest  
+**Then** all submodules are cloned: Eigen, pugixml, CppAD, DaQP, spdlog, nanobind, googletest  
 **And** submodules are at specified commits/tags
 
 #### Scenario: Update submodules after clone
@@ -161,3 +161,21 @@ The system SHALL include clear build instructions in documentation.
 **Then** the project builds successfully  
 **And** all dependencies are explained  
 **And** common issues are documented with solutions
+
+### Requirement: System SHALL integrate spdlog for logging
+The system SHALL use spdlog as the logging library for all C++ code.
+
+#### Scenario: spdlog is available before C++ code compilation
+**Given** the urdfx project source  
+**When** CMake configures the project  
+**Then** spdlog is found or built from submodule  
+**And** spdlog is available to all C++ targets  
+**And** logging headers are accessible via include/urdfx/logging.h
+
+#### Scenario: Logging infrastructure is configured
+**Given** a configured build  
+**When** C++ code includes urdfx/logging.h  
+**Then** logging macros (URDFX_LOG_DEBUG, URDFX_LOG_INFO, URDFX_LOG_WARN, URDFX_LOG_ERROR) are available  
+**And** default log level is INFO  
+**And** logs can be written to console and/or file  
+**And** log level can be configured at runtime

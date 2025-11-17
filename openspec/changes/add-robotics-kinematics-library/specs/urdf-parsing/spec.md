@@ -77,7 +77,7 @@ The system SHALL validate the parsed robot model for common errors.
 #### Scenario: Detect disconnected links
 **Given** a URDF with links not connected to the root  
 **When** the system validates the robot model  
-**Then** a warning is logged about disconnected links  
+**Then** a warning is logged using spdlog about disconnected links  
 **And** only the connected subtree is used for kinematics
 
 #### Scenario: Detect joint limit violations

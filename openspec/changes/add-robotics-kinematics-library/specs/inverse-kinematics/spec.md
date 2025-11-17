@@ -78,7 +78,8 @@ The system SHALL provide detailed diagnostics about the solving process.
 **Given** an IK solve with history logging enabled  
 **When** the user queries the convergence history  
 **Then** the system returns error norms and joint angles for each iteration  
-**And** this data can be used for debugging or visualization
+**And** this data can be used for debugging or visualization  
+**And** iteration details are logged using spdlog at DEBUG level
 
 ### Requirement: System SHALL handle unreachable poses gracefully
 The system SHALL handle targets outside the workspace without crashing.

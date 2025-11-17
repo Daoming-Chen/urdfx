@@ -9,6 +9,7 @@ Robotics applications require efficient kinematics computations for motion plann
 - Forward kinematics using Eigen transformations
 - Jacobian computation using CppAD automatic differentiation  
 - Inverse kinematics solving using DaQP QP solver with joint limit constraints
+- Logging infrastructure using spdlog (must be set up before C++ code implementation)
 - Python bindings via nanobind with NumPy integration
 - WebAssembly bindings via Emscripten for browser usage
 - Three.js-based visualization web application

@@ -119,7 +119,7 @@ Eigen::MatrixXd J = tape.Jacobian(q);
 
 ### 5. Build System
 **Dependency Management**:
-- Git submodules for: Eigen, pugixml, CppAD, DaQP, nanobind, googletest
+- Git submodules for: Eigen, pugixml, CppAD, DaQP, spdlog, nanobind, googletest
 - Custom install script for system-level dependencies (Emscripten)
 
 **CMake Structure**:
@@ -244,6 +244,9 @@ Three.js App
 - Use exceptions for unrecoverable errors (e.g., invalid URDF)
 - Return std::optional or status codes for recoverable errors (e.g., IK not converged)
 - Provide detailed error messages for debugging
+- Use spdlog for all logging (warnings, errors, debug information)
+- Log levels: DEBUG (detailed tracing), INFO (general information), WARN (warnings), ERROR (errors)
+- Logging infrastructure must be set up before any C++ code implementation
 
 ## Performance Considerations
 - Pre-allocate matrices for FK/Jacobian computation
