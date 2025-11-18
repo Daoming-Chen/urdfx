@@ -1,0 +1,140 @@
+.ik-control-panel {
+  padding: 1rem;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.ik-control-panel h3 {
+  margin: 0 0 1rem 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+}
+
+.ik-hint {
+  background: #e3f2fd;
+  border-left: 4px solid #2196f3;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+}
+
+.ik-hint p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #1976d2;
+}
+
+.edit-mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.edit-mode-toggle button {
+  flex: 1;
+  padding: 0.5rem;
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.edit-mode-toggle button:hover:not(:disabled) {
+  background: var(--hover-color);
+}
+
+.edit-mode-toggle button.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.edit-mode-toggle button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.position-controls,
+.orientation-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.control-group label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.control-group input[type="number"] {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-primary);
+  font-family: monospace;
+}
+
+.control-group input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary-color);
+}
+
+.solve-button {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 1rem;
+}
+
+.solve-button:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.solve-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.solve-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.solution-status {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.solution-status.success {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #4caf50;
+}
+
+.solution-status.failure {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #f44336;
+}

@@ -576,6 +576,7 @@ EMSCRIPTEN_BINDINGS(urdfx_wasm_bindings) {
 
     class_<ForwardKinematicsHandle>("ForwardKinematics")
         .smart_ptr<std::shared_ptr<ForwardKinematicsHandle>>("ForwardKinematics")
+        .constructor<std::shared_ptr<RobotHandle>, std::string>()
         .constructor<std::shared_ptr<RobotHandle>, std::string, std::string>()
         .function("compute", emscripten::optional_override([](ForwardKinematicsHandle& self, val joint_angles, val maybe_check_bounds) {
             const auto angles = toVectorDouble(joint_angles, self.getNumJoints(), "jointAngles");
@@ -627,6 +628,7 @@ EMSCRIPTEN_BINDINGS(urdfx_wasm_bindings) {
 
     class_<SQPIKSolverHandle>("SQPIKSolver")
         .smart_ptr<std::shared_ptr<SQPIKSolverHandle>>("SQPIKSolver")
+        .constructor<std::shared_ptr<RobotHandle>, std::string>()
         .constructor<std::shared_ptr<RobotHandle>, std::string, std::string>()
         .function("setConfig", &SQPIKSolverHandle::setConfig)
         .function("getConfig", &SQPIKSolverHandle::getConfig)
