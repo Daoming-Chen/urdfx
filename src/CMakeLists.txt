@@ -1,21 +1,14 @@
 # Core library sources
 set(URDFX_SOURCES
-    # Will be populated in later phases
-    # For now, create a placeholder to allow CMake to determine linker language
+    robot_model.cpp
+    urdf_parser.cpp
 )
 
 set(URDFX_HEADERS
     ${PROJECT_SOURCE_DIR}/include/urdfx/logging.h
+    ${PROJECT_SOURCE_DIR}/include/urdfx/robot_model.h
+    ${PROJECT_SOURCE_DIR}/include/urdfx/urdf_parser.h
 )
-
-# Create placeholder source file if no sources exist yet
-if(NOT URDFX_SOURCES)
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/placeholder.cpp
-        "// Placeholder file to satisfy CMake linker language detection\n"
-        "// Will be replaced by actual implementation files in later phases\n"
-    )
-    set(URDFX_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/placeholder.cpp)
-endif()
 
 # Create core library
 add_library(urdfx ${URDFX_SOURCES} ${URDFX_HEADERS})

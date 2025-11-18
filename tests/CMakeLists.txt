@@ -1,7 +1,7 @@
 # Test sources
 set(TEST_SOURCES
-    # Will be populated in later phases
     test_main.cpp
+    test_urdf_parser.cpp
 )
 
 # Create test executable

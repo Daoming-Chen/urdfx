@@ -57,36 +57,36 @@ This document outlines the implementation tasks in dependency order. Each task s
 ## Phase 2: Core C++ Library - URDF Parsing
 
 ### 7. Design Robot Model Data Structures
-- [ ] Define Link class (name, inertial, visual, collision)
-- [ ] Define Joint class (name, type, axis, limits, origin, parent, child)
-- [ ] Define Robot class (name, links, joints, root_link)
-- [ ] Define Transform class (wrapper around Eigen::Isometry3d)
-- [ ] Implement accessors and utility methods
+- [x] Define Link class (name, inertial, visual, collision)
+- [x] Define Joint class (name, type, axis, limits, origin, parent, child)
+- [x] Define Robot class (name, links, joints, root_link)
+- [x] Define Transform class (wrapper around Eigen::Isometry3d)
+- [x] Implement accessors and utility methods
 
 ### 8. Implement URDF Parser
-- [ ] Create URDFParser class using pugixml
-- [ ] Implement parseURDFFile(path) method
-- [ ] Implement parseURDFString(content) method
-- [ ] Parse <robot> root element
-- [ ] Parse <link> elements (inertial, visual, collision)
-- [ ] Parse <joint> elements (type, axis, limits, origin)
-- [ ] Build kinematic tree structure
-- [ ] Validate robot model (check for disconnected links, invalid limits)
+- [x] Create URDFParser class using pugixml
+- [x] Implement parseURDFFile(path) method
+- [x] Implement parseURDFString(content) method
+- [x] Parse <robot> root element
+- [x] Parse <link> elements (inertial, visual, collision)
+- [x] Parse <joint> elements (type, axis, limits, origin)
+- [x] Build kinematic tree structure
+- [x] Validate robot model (check for disconnected links, invalid limits)
 
 ### 9. Implement Error Handling
-- [ ] Define URDFParseException class
-- [ ] Add descriptive error messages with line numbers
-- [ ] Handle missing required tags gracefully
-- [ ] Add logging for warnings using spdlog (e.g., disconnected links)
+- [x] Define URDFParseException class
+- [x] Add descriptive error messages with line numbers
+- [x] Handle missing required tags gracefully
+- [x] Add logging for warnings using spdlog (e.g., disconnected links)
 
 ### 10. Write URDF Parsing Tests
-- [ ] Create test fixture with UR5e URDF
-- [ ] Test successful parsing of valid URDF
-- [ ] Test error handling for malformed URDF
-- [ ] Test kinematic tree structure
-- [ ] Test joint property extraction
-- [ ] Test mesh path resolution
-- [ ] Run tests and verify all pass
+- [x] Create test fixture with UR5e URDF
+- [x] Test successful parsing of valid URDF
+- [x] Test error handling for malformed URDF
+- [x] Test kinematic tree structure
+- [x] Test joint property extraction
+- [x] Test mesh path resolution
+- [x] Run tests and verify all pass
 
 ## Phase 3: Core C++ Library - Forward Kinematics
 

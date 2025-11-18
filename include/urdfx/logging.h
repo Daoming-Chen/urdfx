@@ -84,3 +84,11 @@ inline void clearLogFiles() {
 #define URDFX_LOG_WARN(...) urdfx::getLogger()->warn(__VA_ARGS__)
 #define URDFX_LOG_ERROR(...) urdfx::getLogger()->error(__VA_ARGS__)
 #define URDFX_LOG_CRITICAL(...) urdfx::getLogger()->critical(__VA_ARGS__)
+
+// Short-form macros
+#define URDFX_TRACE(...) URDFX_LOG_TRACE(__VA_ARGS__)
+#define URDFX_DEBUG(...) URDFX_LOG_DEBUG(__VA_ARGS__)
+#define URDFX_INFO(...) URDFX_LOG_INFO(__VA_ARGS__)
+#define URDFX_WARN(...) URDFX_LOG_WARN(__VA_ARGS__)
+#define URDFX_ERROR(...) URDFX_LOG_ERROR(__VA_ARGS__)
+#define URDFX_CRITICAL(...) URDFX_LOG_CRITICAL(__VA_ARGS__)
