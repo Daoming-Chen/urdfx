@@ -116,9 +116,10 @@ urdfx/
 - WASM binary size: < 2MB (compressed)
 
 ### Compatibility
-- C++20 standard (GCC 10+, Clang 12+, MSVC 2019+)
+- C++20 standard (GCC 10+, Clang 12+, MSVC 19.29+ / Visual Studio 2019 16.11+)
 - Python 3.8+ (support for NumPy 1.20+)
 - Modern browsers with WebAssembly support (Chrome 90+, Firefox 88+)
+- **Supported Platforms**: Linux (Ubuntu 20.04+, Fedora 34+), macOS 11+, Windows 10 (1809+) / Windows 11
 
 ### Limitations
 - No collision detection (future work)
@@ -149,8 +150,18 @@ urdfx/
 
 ## Development Workflow
 1. Clone with submodules: `git clone --recursive`
-2. Run setup script: `./scripts/setup.sh` (installs Emscripten if needed)
-3. Configure build: `cmake -B build -DCMAKE_BUILD_TYPE=Release`
-4. Build: `cmake --build build -j$(nproc)`
-5. Test: `ctest --test-dir build --output-on-failure`
-6. Install: `cmake --install build --prefix /usr/local`
+2. Run setup script: 
+   - Linux/macOS: `./scripts/setup.sh` 
+   - Windows: `.\scripts\setup.ps1` (checks dependencies and provides install instructions)
+3. Configure build: 
+   - Linux/macOS: `cmake -B build -DCMAKE_BUILD_TYPE=Release`
+   - Windows: `cmake -B build -DCMAKE_BUILD_TYPE=Release` (from VS Developer Command Prompt)
+4. Build: 
+   - Linux/macOS: `cmake --build build -j$(nproc)`
+   - Windows: `cmake --build build --config Release -j`
+5. Test: 
+   - Linux/macOS: `ctest --test-dir build --output-on-failure`
+   - Windows: `ctest --test-dir build --build-config Release --output-on-failure`
+6. Install: 
+   - Linux/macOS: `cmake --install build --prefix /usr/local`
+   - Windows: `cmake --install build --prefix "C:\Program Files\urdfx"` (run as Administrator)
