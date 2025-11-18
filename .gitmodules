@@ -1,0 +1,21 @@
+[submodule "third_party/eigen"]
+	path = third_party/eigen
+	url = https://gitlab.com/libeigen/eigen.git
+[submodule "third_party/pugixml"]
+	path = third_party/pugixml
+	url = https://github.com/zeux/pugixml.git
+[submodule "third_party/CppAD"]
+	path = third_party/CppAD
+	url = https://github.com/coin-or/CppAD.git
+[submodule "third_party/daqp"]
+	path = third_party/daqp
+	url = https://github.com/darnstrom/daqp.git
+[submodule "third_party/nanobind"]
+	path = third_party/nanobind
+	url = https://github.com/wjakob/nanobind.git
+[submodule "third_party/googletest"]
+	path = third_party/googletest
+	url = https://github.com/google/googletest.git
+[submodule "third_party/spdlog"]
+	path = third_party/spdlog
+	url = https://github.com/gabime/spdlog.git
