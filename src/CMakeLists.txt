@@ -3,6 +3,7 @@ set(URDFX_SOURCES
     robot_model.cpp
     urdf_parser.cpp
     kinematics.cpp
+    ${PROJECT_SOURCE_DIR}/third_party/CppAD/cppad_lib/temp_file.cpp
 )
 
 set(URDFX_HEADERS

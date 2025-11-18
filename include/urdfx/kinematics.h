@@ -2,10 +2,19 @@
 
 #include "robot_model.h"
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
+#include <Eigen/SVD>
 #include <vector>
 #include <memory>
 #include <string>
 #include <optional>
+#include <stdexcept>
+#include <unordered_map>
+
+namespace CppAD {
+    template <class Base, class RecBase>
+    class ADFun;
+}
 
 namespace urdfx {
 
@@ -162,5 +171,160 @@ private:
         const Eigen::VectorXd& joint_angles,
         size_t end_joint_idx) const;
 };
+
+/**
+ * @brief Scalar-agnostic forward kinematics helper compatible with CppAD
+ */
+class ADForwardKinematics {
+public:
+    ADForwardKinematics() = default;
+
+    template <typename Scalar>
+    Eigen::Transform<Scalar, 3, Eigen::Isometry> compute(
+        const KinematicChain& chain,
+        const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& joint_angles) const;
+};
+
+/**
+ * @brief Jacobian representation options
+ */
+enum class JacobianType {
+    Analytic,   ///< Spatial Jacobian expressed in base frame
+    Geometric   ///< Body Jacobian expressed in end-effector frame
+};
+
+/**
+ * @brief Automatic differentiation-powered Jacobian computation and metrics
+ */
+class JacobianCalculator {
+public:
+    JacobianCalculator(
+        std::shared_ptr<const Robot> robot,
+        const std::string& end_link,
+        const std::string& base_link = "");
+
+    Eigen::MatrixXd compute(
+        const Eigen::VectorXd& joint_angles,
+        JacobianType type = JacobianType::Analytic,
+        const std::string& target_link = "") const;
+
+    Eigen::MatrixXd computeJacobianDerivative(
+        const Eigen::VectorXd& joint_angles,
+        const Eigen::VectorXd& joint_velocities,
+        JacobianType type = JacobianType::Analytic,
+        const std::string& target_link = "") const;
+
+    bool isSingular(
+        const Eigen::VectorXd& joint_angles,
+        double threshold = 1e-6,
+        JacobianType type = JacobianType::Analytic,
+        const std::string& target_link = "") const;
+
+    double getManipulability(
+        const Eigen::VectorXd& joint_angles,
+        JacobianType type = JacobianType::Analytic,
+        const std::string& target_link = "") const;
+
+    double getConditionNumber(
+        const Eigen::VectorXd& joint_angles,
+        JacobianType type = JacobianType::Analytic,
+        const std::string& target_link = "") const;
+
+    static Eigen::MatrixXd convertJacobian(
+        const Eigen::MatrixXd& jacobian,
+        const Transform& pose,
+        JacobianType from,
+        JacobianType to);
+
+private:
+    struct TapeData {
+        struct TapeDeleter {
+            void operator()(void* ptr) const;
+        };
+        std::unique_ptr<void, TapeDeleter> tape;
+        size_t dof = 0;
+    };
+
+    std::string resolveLink(const std::string& target_link) const;
+    const KinematicChain& ensureChain(const std::string& link) const;
+    const ForwardKinematics& ensureForwardKinematics(const std::string& link) const;
+    TapeData& ensureTape(const std::string& link) const;
+
+    Eigen::MatrixXd buildSpatialJacobian(
+        const Eigen::MatrixXd& raw_pose_jac,
+        const Transform& pose) const;
+
+    Eigen::MatrixXd buildSpatialJacobianDerivative(
+        const Eigen::MatrixXd& raw_pose_jac_dot,
+        const Transform& pose) const;
+
+    Eigen::MatrixXd convertIfNeeded(
+        const Eigen::MatrixXd& spatial_jac,
+        const Transform& pose,
+        JacobianType type) const;
+
+    Eigen::MatrixXd convertDerivativeIfNeeded(
+        const Eigen::MatrixXd& spatial_jac,
+        const Eigen::MatrixXd& spatial_jac_dot,
+        const Transform& pose,
+        const Eigen::VectorXd& joint_velocities,
+        JacobianType type) const;
+
+    static CppAD::ADFun<double, double>* getTapePointer(const TapeData& data);
+
+    std::shared_ptr<const Robot> robot_;
+    std::string base_link_;
+    std::string default_end_link_;
+
+    mutable std::unordered_map<std::string, std::unique_ptr<KinematicChain>> chain_cache_;
+    mutable std::unordered_map<std::string, std::unique_ptr<ForwardKinematics>> fk_cache_;
+    mutable std::unordered_map<std::string, std::unique_ptr<TapeData>> tape_cache_;
+    ADForwardKinematics ad_fk_;
+};
+
+template <typename Scalar>
+Eigen::Transform<Scalar, 3, Eigen::Isometry> ADForwardKinematics::compute(
+    const KinematicChain& chain,
+    const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& joint_angles) const
+{
+    if (static_cast<size_t>(joint_angles.size()) != chain.getNumJoints()) {
+        throw std::invalid_argument("Joint vector size does not match chain DOF");
+    }
+
+    Eigen::Transform<Scalar, 3, Eigen::Isometry> T =
+        Eigen::Transform<Scalar, 3, Eigen::Isometry>::Identity();
+
+    const auto& joints = chain.getJoints();
+    for (size_t i = 0; i < joints.size(); ++i) {
+        const auto& joint = joints[i];
+        const auto& origin = joint->getOrigin().getTransform();
+
+        T = T * origin.cast<Scalar>();
+
+        Eigen::Transform<Scalar, 3, Eigen::Isometry> joint_tf =
+            Eigen::Transform<Scalar, 3, Eigen::Isometry>::Identity();
+        Scalar q = joint_angles[i];
+        Eigen::Matrix<Scalar, 3, 1> axis = joint->getAxis().cast<Scalar>();
+
+        switch (joint->getType()) {
+            case JointType::Revolute:
+            case JointType::Continuous: {
+                Eigen::AngleAxis<Scalar> rotation(q, axis);
+                joint_tf.linear() = rotation.toRotationMatrix();
+                break;
+            }
+            case JointType::Prismatic: {
+                joint_tf.translation() = axis * q;
+                break;
+            }
+            default:
+                break;
+        }
+
+        T = T * joint_tf;
+    }
+
+    return T;
+}
 
 } // namespace urdfx

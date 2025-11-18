@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <chrono>
 #include <thread>
+#include <cmath>
 
 using namespace urdfx;
 
@@ -63,6 +64,44 @@ protected:
     std::shared_ptr<Robot> simple_robot_;
     std::shared_ptr<Robot> ur5e_robot_;
 };
+
+namespace {
+
+Eigen::MatrixXd finiteDifferenceJacobian(
+    const ForwardKinematics& fk,
+    const Eigen::VectorXd& joint_angles,
+    double epsilon = 1e-6)
+{
+    const size_t dof = static_cast<size_t>(joint_angles.size());
+    Eigen::MatrixXd J(6, dof);
+    Transform nominal = fk.compute(joint_angles);
+    const Eigen::Matrix3d R = nominal.rotation();
+
+    Eigen::VectorXd q_plus = joint_angles;
+    Eigen::VectorXd q_minus = joint_angles;
+
+    for (size_t i = 0; i < dof; ++i) {
+        q_plus = joint_angles;
+        q_minus = joint_angles;
+        q_plus(static_cast<Eigen::Index>(i)) += epsilon;
+        q_minus(static_cast<Eigen::Index>(i)) -= epsilon;
+
+        Transform T_plus = fk.compute(q_plus);
+        Transform T_minus = fk.compute(q_minus);
+
+        Eigen::Vector3d dp = (T_plus.translation() - T_minus.translation()) / (2.0 * epsilon);
+        Eigen::Matrix3d dR = (T_plus.rotation() - T_minus.rotation()) / (2.0 * epsilon);
+        Eigen::Matrix3d omega_skew = dR * R.transpose();
+        Eigen::Vector3d dom(omega_skew(2, 1), omega_skew(0, 2), omega_skew(1, 0));
+
+        J.block<3, 1>(0, static_cast<Eigen::Index>(i)) = dp;
+        J.block<3, 1>(3, static_cast<Eigen::Index>(i)) = dom;
+    }
+
+    return J;
+}
+
+} // namespace
 
 // ============================================================================
 // KinematicChain Tests
@@ -444,3 +483,143 @@ TEST_F(ForwardKinematicsTest, ThreadSafety) {
     
     EXPECT_EQ(error_count, 0) << "Thread safety test failed with " << error_count << " errors";
 }
+
+// ============================================================================
+// Jacobian Calculator Tests
+// ============================================================================
+
+TEST_F(ForwardKinematicsTest, JacobianMatchesAnalyticalForSimpleRobot) {
+    JacobianCalculator jc(simple_robot_, "link2", "base_link");
+    Eigen::VectorXd q = Eigen::VectorXd::Zero(2);
+
+    Eigen::MatrixXd J = jc.compute(q, JacobianType::Analytic);
+
+    Eigen::MatrixXd expected = Eigen::MatrixXd::Zero(6, 2);
+    expected(1, 0) = 1.0;
+    expected(5, 0) = 1.0;
+    expected(5, 1) = 1.0;
+
+    EXPECT_EQ(J.rows(), 6);
+    EXPECT_EQ(J.cols(), 2);
+    EXPECT_TRUE(J.isApprox(expected, 1e-9));
+}
+
+TEST_F(ForwardKinematicsTest, JacobianMatchesNumericalDifferentiation) {
+    JacobianCalculator jc(simple_robot_, "link2", "base_link");
+    ForwardKinematics fk(simple_robot_, "link2", "base_link");
+
+    Eigen::VectorXd q(2);
+    q << 0.3, -0.4;
+
+    Eigen::MatrixXd J_ad = jc.compute(q, JacobianType::Analytic);
+    Eigen::MatrixXd J_fd = finiteDifferenceJacobian(fk, q);
+
+    EXPECT_TRUE(J_ad.isApprox(J_fd, 1e-5)) << "AD Jacobian:\n" << J_ad << "\nFD:\n" << J_fd;
+}
+
+TEST_F(ForwardKinematicsTest, GeometricJacobianMatchesConvertedAnalytic) {
+    JacobianCalculator jc(simple_robot_, "link2", "base_link");
+    ForwardKinematics fk(simple_robot_, "link2", "base_link");
+
+    Eigen::VectorXd q(2);
+    q << -0.2, 0.8;
+
+    Eigen::MatrixXd J_analytic = jc.compute(q, JacobianType::Analytic);
+    Eigen::MatrixXd J_geo = jc.compute(q, JacobianType::Geometric);
+    Transform pose = fk.compute(q);
+
+    Eigen::MatrixXd converted = JacobianCalculator::convertJacobian(
+        J_analytic, pose, JacobianType::Analytic, JacobianType::Geometric);
+
+    EXPECT_TRUE(J_geo.isApprox(converted, 1e-9));
+}
+
+TEST_F(ForwardKinematicsTest, JacobianDerivativeMatchesFiniteDifference) {
+    JacobianCalculator jc(simple_robot_, "link2", "base_link");
+
+    Eigen::VectorXd q(2);
+    q << 0.5, -0.3;
+    Eigen::VectorXd dq(2);
+    dq << 0.2, -0.1;
+
+    Eigen::MatrixXd J_dot = jc.computeJacobianDerivative(q, dq, JacobianType::Analytic);
+
+    const double dt = 1e-4;
+    Eigen::VectorXd q_plus = q + dt * dq;
+    Eigen::VectorXd q_minus = q - dt * dq;
+
+    Eigen::MatrixXd J_plus = jc.compute(q_plus, JacobianType::Analytic);
+    Eigen::MatrixXd J_minus = jc.compute(q_minus, JacobianType::Analytic);
+    Eigen::MatrixXd J_dot_fd = (J_plus - J_minus) / (2.0 * dt);
+
+    EXPECT_TRUE(J_dot.isApprox(J_dot_fd, 1e-4))
+        << "AD Jacobian dot:\n" << J_dot << "\nFD:\n" << J_dot_fd;
+}
+
+TEST_F(ForwardKinematicsTest, JacobianToIntermediateLink) {
+    JacobianCalculator jc(simple_robot_, "link2", "base_link");
+    ForwardKinematics fk_end(simple_robot_, "link2", "base_link");
+    ForwardKinematics fk_mid(simple_robot_, "link1", "base_link");
+    Eigen::VectorXd q = Eigen::VectorXd::Zero(2);
+
+    Eigen::MatrixXd J_end = jc.compute(q, JacobianType::Analytic);
+    Eigen::MatrixXd J_mid = jc.compute(q, JacobianType::Analytic, "link1");
+
+    Eigen::VectorXd q_mid(1);
+    q_mid << q(0);
+    Eigen::Vector3d delta = fk_end.compute(q).translation() - fk_mid.compute(q_mid).translation();
+
+    ASSERT_EQ(J_mid.cols(), 1);
+    EXPECT_TRUE((J_mid.block<3, 1>(3, 0).isApprox(J_end.block<3, 1>(3, 0), 1e-9)));
+
+    Eigen::Vector3d shifted_linear = J_mid.block<3, 1>(0, 0) +
+        J_mid.block<3, 1>(3, 0).cross(delta);
+    EXPECT_TRUE((shifted_linear.isApprox(J_end.block<3, 1>(0, 0), 1e-9)));
+}
+
+TEST_F(ForwardKinematicsTest, SingularityDetectionAndManipulability) {
+    const std::string singular_urdf = R"(
+<?xml version="1.0"?>
+<robot name="singular_robot">
+    <link name="base_link"/>
+    <link name="link1"/>
+    <link name="link2"/>
+    <joint name="joint1" type="revolute">
+        <parent link="base_link"/>
+        <child link="link1"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+    <joint name="joint2" type="revolute">
+        <parent link="link1"/>
+        <child link="link2"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+</robot>
+)";
+
+    URDFParser parser;
+    auto robot = parser.parseString(singular_urdf);
+    ASSERT_NE(robot, nullptr);
+
+    JacobianCalculator jc(robot, "link2", "base_link");
+    Eigen::VectorXd q = Eigen::VectorXd::Zero(2);
+
+    EXPECT_TRUE(jc.isSingular(q, 1e-8));
+    EXPECT_NEAR(jc.getManipulability(q), 0.0, 1e-8);
+    EXPECT_TRUE(std::isinf(jc.getConditionNumber(q)));
+}
+
+TEST_F(ForwardKinematicsTest, ManipulabilityAndConditionNumberFinite) {
+    JacobianCalculator jc(simple_robot_, "link2", "base_link");
+    Eigen::VectorXd q(2);
+    q << 0.8, -0.6;
+
+    double manipulability = jc.getManipulability(q);
+    double condition = jc.getConditionNumber(q);
+
+    EXPECT_GT(manipulability, 0.0);
+    EXPECT_TRUE(std::isfinite(condition));
+}
+
