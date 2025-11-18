@@ -49,7 +49,11 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
     if(MSVC)
         add_compile_options(/O2)
     else()
-        add_compile_options(-O3 -march=native)
+        if(EMSCRIPTEN)
+            add_compile_options(-O3)
+        else()
+            add_compile_options(-O3 -march=native)
+        endif()
     endif()
 endif()
 
@@ -88,50 +92,52 @@ if(BUILD_WASM)
     add_subdirectory(wasm)
 endif()
 
-# Installation
-include(GNUInstallDirs)
+# Installation (skip for Emscripten builds to avoid exporting host-only deps)
+if(NOT EMSCRIPTEN)
+    include(GNUInstallDirs)
 
-install(DIRECTORY include/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
-)
+    install(DIRECTORY include/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+    )
 
-install(TARGETS urdfx
-    EXPORT urdfxTargets
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/urdfx
-)
+    install(TARGETS urdfx
+        EXPORT urdfxTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/urdfx
+    )
 
-# Export CMake targets
-install(EXPORT urdfxTargets
-    FILE urdfxTargets.cmake
-    NAMESPACE urdfx::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/urdfx
-)
+    # Export CMake targets
+    install(EXPORT urdfxTargets
+        FILE urdfxTargets.cmake
+        NAMESPACE urdfx::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/urdfx
+    )
 
-# Generate and install CMake config file
-include(CMakePackageConfigHelpers)
+    # Generate and install CMake config file
+    include(CMakePackageConfigHelpers)
 
-configure_package_config_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/urdfxConfig.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/urdfxConfig.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/urdfx
-)
+    configure_package_config_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/urdfxConfig.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/urdfxConfig.cmake
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/urdfx
+    )
 
-write_basic_package_version_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/urdfxConfigVersion.cmake
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY SameMajorVersion
-)
+    write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/urdfxConfigVersion.cmake
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion
+    )
 
-install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/urdfxConfig.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/urdfxConfigVersion.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/urdfx
-)
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/urdfxConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/urdfxConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/urdfx
+    )
+endif()
 
 # Print configuration summary
 message(STATUS "")
