@@ -26,11 +26,8 @@ target_include_directories(urdfx_tests
 
 # Add tests to CTest
 include(GoogleTest)
-# Disable test discovery during build to avoid PATH issues on Windows
-# Tests can still be run manually with ctest
-gtest_discover_tests(urdfx_tests
-    DISCOVERY_MODE PRE_TEST
-)
+# Use add_test for better compatibility
+add_test(NAME urdfx_tests COMMAND urdfx_tests)
 
 # Copy test data files from examples/models
 file(COPY ${PROJECT_SOURCE_DIR}/examples/models/ur5
