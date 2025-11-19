@@ -86,17 +86,23 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(cmake/Dependencies.cmake)
 
 # Core library
-add_subdirectory(src)
+add_subdirectory(core)
 
-# Tests
+# Tests (now handled within core/)
+# Kept here for backward compatibility with existing build scripts
+# if(BUILD_TESTING)
+#     enable_testing()
+#     add_subdirectory(tests)
+# endif()
+
+# Enable testing for core library
 if(BUILD_TESTING)
     enable_testing()
-    add_subdirectory(tests)
 endif()
 
 # Examples
 if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
+    add_subdirectory(examples/cpp)
 endif()
 
 # Benchmarks
@@ -106,48 +112,20 @@ endif()
 
 # Python bindings
 if(BUILD_PYTHON_BINDINGS)
-    add_subdirectory(python)
+    add_subdirectory(bindings/python)
 endif()
 
 # WebAssembly bindings
 if(BUILD_WASM)
-    add_subdirectory(wasm)
+    add_subdirectory(bindings/wasm)
 endif()
 
 # Installation (skip for Emscripten builds to avoid exporting host-only deps)
 if(NOT EMSCRIPTEN)
     include(GNUInstallDirs)
 
-    install(DIRECTORY include/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
-    )
-
-    # Install library
-    install(TARGETS urdfx
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/urdfx
-    )
-
-    # Only export targets if all dependencies are system packages (not submodules)
-    # This avoids export errors when building with submodule dependencies
-    if(Eigen3_FOUND AND spdlog_FOUND AND pugixml_FOUND)
-        install(TARGETS urdfx
-            EXPORT urdfxTargets
-        )
-        
-        install(EXPORT urdfxTargets
-            FILE urdfxTargets.cmake
-            NAMESPACE urdfx::
-            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/urdfx
-        )
-    else()
-        message(STATUS "Skipping CMake export (using submodule dependencies)")
-    endif()
-
+    # Installation now handled in core/CMakeLists.txt
+    
     # Generate and install CMake config file
     include(CMakePackageConfigHelpers)
 

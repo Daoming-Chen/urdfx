@@ -1,0 +1,15 @@
+{
+    "name": "@urdfx/wasm-tests",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "test": "npm run test:node && npm run test:browser",
+        "test:node": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config ./jest.config.cjs --runTestsByPath ./tests/node/module.test.js",
+        "test:browser": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config ./jest.config.cjs --runTestsByPath ./tests/browser/module.browser.test.js"
+    },
+    "devDependencies": {
+        "@types/jest": "^29.5.11",
+        "jest": "^29.7.0",
+        "puppeteer": "^22.9.0"
+    }
+}

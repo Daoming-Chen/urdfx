@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>urdfx WebAssembly Manual Test</title>
+    <style>
+        body { font-family: sans-serif; margin: 2rem; max-width: 960px; }
+        textarea { width: 100%; height: 12rem; font-family: monospace; }
+        pre { background: #f5f5f5; padding: 1rem; overflow-x: auto; }
+        button { padding: 0.5rem 1rem; margin-top: 1rem; }
+        #status { margin-top: 1rem; font-weight: bold; }
+    </style>
+    <script defer src="urdfx.js"></script>
+</head>
+<body>
+    <h1>urdfx WebAssembly Manual Test</h1>
+    <p>
+        This page exercises the urdfx WebAssembly bindings. Build the project with Emscripten so that
+        <code>urdfx.js</code> and <code>urdfx.wasm</code> are located alongside this HTML file. Then open the
+        page in a browser (served over HTTP) to validate basic functionality.
+    </p>
+
+    <label for="urdf-input">URDF XML</label>
+    <textarea id="urdf-input">&lt;robot name=&quot;two_link&quot;&gt;
+  &lt;link name=&quot;base&quot; /&gt;
+  &lt;link name=&quot;tip&quot; /&gt;
+  &lt;joint name=&quot;j1&quot; type=&quot;revolute&quot;&gt;
+    &lt;parent link=&quot;base&quot; /&gt;
+    &lt;child link=&quot;tip&quot; /&gt;
+    &lt;origin xyz=&quot;0 0 0&quot; rpy=&quot;0 0 0&quot; /&gt;
+    &lt;axis xyz=&quot;0 0 1&quot; /&gt;
+    &lt;limit lower=&quot;-3.14&quot; upper=&quot;3.14&quot; effort=&quot;10&quot; velocity=&quot;10&quot; /&gt;
+  &lt;/joint&gt;
+&lt;/robot&gt;</textarea>
+
+    <label for="joint-input">Joint Angles (radians, comma-separated)</label>
+    <input id="joint-input" type="text" value="0.0" style="width: 100%;" />
+
+    <button id="run-tests">Run Tests</button>
+    <div id="status"></div>
+    <pre id="output"></pre>
+
+    <script>
+        const target = document.getElementById('status');
+        const output = document.getElementById('output');
+        const button = document.getElementById('run-tests');
+
+        function log(message) {
+            output.textContent += `${message}\n`;
+        }
+
+        async function runUrdfxTests() {
+            output.textContent = '';
+            target.textContent = 'Loading module…';
+            try {
+                const module = await createUrdfxModule({
+                    locateFile(file) {
+                        if (file.endsWith('.wasm')) {
+                            return 'urdfx.wasm';
+                        }
+                        return file;
+                    },
+                });
+
+                target.textContent = 'Module loaded. Running computations…';
+
+                const urdf = document.getElementById('urdf-input').value;
+                const robot = module.Robot.fromURDFString(urdf);
+                log(`Robot name: ${robot.getName()}`);
+                log(`DOF: ${robot.getDOF()}`);
+
+                const fk = new module.ForwardKinematics(robot, robot.getJointNames()[robot.getJointNames().length - 1] || 'tip');
+                const angles = document.getElementById('joint-input').value
+                    .split(',')
+                    .map((value) => parseFloat(value.trim()))
+                    .filter((value) => Number.isFinite(value));
+
+                const pose = fk.compute(angles);
+                log(`Pose position: ${pose.position.join(', ')}`);
+                log(`Pose quaternion: ${pose.quaternion.join(', ')}`);
+
+                robot.dispose();
+                fk.dispose();
+                target.textContent = 'Done';
+            } catch (error) {
+                console.error(error);
+                target.textContent = 'Error';
+                output.textContent = String(error);
+            }
+        }
+
+        button.addEventListener('click', () => {
+            runUrdfxTests().catch((error) => {
+                console.error(error);
+            });
+        });
+    </script>
+</body>
+</html>
