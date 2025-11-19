@@ -1,0 +1,13 @@
+{
+    "name": "urdfx-js-examples",
+    "version": "1.0.0",
+    "description": "JavaScript examples for urdfx WASM bindings",
+    "main": "forward_kinematics.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "fk": "node forward_kinematics.js"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {}
+}

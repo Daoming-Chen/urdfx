@@ -20,7 +20,7 @@ if (-not (Test-Path $vcvarsPath)) {
 }
 
 # Set up Emscripten
-$emsdkPath = Join-Path $PSScriptRoot "third_party\emsdk"
+$emsdkPath = Join-Path (Split-Path $PSScriptRoot -Parent) "third_party\emsdk"
 $emsdkEnvBat = Join-Path $emsdkPath "emsdk_env.bat"
 
 if (-not (Test-Path $emsdkEnvBat)) {
@@ -43,7 +43,7 @@ call "$vcvarsPath"
 if errorlevel 1 exit /b 1
 call "$emsdkEnvBat"
 if errorlevel 1 exit /b 1
-emcmake cmake -B build-wasm -G "NMake Makefiles" -DBUILD_WASM=ON -DCMAKE_BUILD_TYPE=Release
+call emcmake cmake -B build-wasm -G "NMake Makefiles" -DBUILD_WASM=ON -DCMAKE_BUILD_TYPE=Release
 if errorlevel 1 exit /b 1
 cd build-wasm
 if errorlevel 1 exit /b 1

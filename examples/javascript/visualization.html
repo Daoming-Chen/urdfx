@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URDFX Robot Visualization</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-family: sans-serif;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px black;
+        }
+    </style>
+    <!-- Load urdfx (WASM wrapper) as a global script -->
+    <script src="../../build-wasm/wasm/urdfx.js"></script>
+    
+    <!-- Import map for Three.js and dependencies -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+                "three/examples/jsm/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+                "urdf-loader": "https://unpkg.com/urdf-loader@0.12.6/src/URDFLoader.js",
+                "lil-gui": "https://unpkg.com/lil-gui@0.19.1/dist/lil-gui.esm.min.js"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="info">URDFX Visualization Demo<br>Loading...</div>
+    <script type="module" src="./visualization.js"></script>
+</body>
+</html>
