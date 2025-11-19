@@ -177,24 +177,69 @@ cmake --build build
 
 ```
 urdfx/
-├── include/urdfx/          # Public C++ headers
-│   ├── urdf_parser.h
-│   ├── forward_kinematics.h
-│   ├── jacobian_calculator.h
-│   └── ik_solver.h
-├── src/                    # C++ implementation
-├── python/                 # nanobind Python bindings
-├── wasm/                   # Emscripten WebAssembly bindings
-├── visualization/          # Three.js visualization app
-├── tests/                  # C++ unit tests (GTest)
-├── python_tests/           # Python tests (pytest)
-├── third_party/            # Git submodules
+├── core/                       # C++ core library
+│   ├── include/urdfx/          # Public C++ headers
+│   │   ├── urdf_parser.h
+│   │   ├── forward_kinematics.h
+│   │   ├── jacobian_calculator.h
+│   │   └── ik_solver.h
+│   ├── src/                    # C++ implementation
+│   ├── tests/                  # C++ unit tests (GTest)
+│   └── CMakeLists.txt
+│
+├── bindings/                   # Language bindings
+│   ├── python/                 # Python bindings (nanobind)
+│   │   ├── src/                # nanobind binding code
+│   │   ├── urdfx/              # Python package
+│   │   ├── tests/              # Python tests (pytest)
+│   │   ├── CMakeLists.txt
+│   │   ├── setup.py
+│   │   └── pyproject.toml
+│   │
+│   └── wasm/                   # WebAssembly bindings (Emscripten)
+│       ├── src/                # Embind binding code
+│       ├── tests/              # WASM tests (Jest)
+│       ├── CMakeLists.txt
+│       ├── package.json
+│       └── urdfx.d.ts
+│
+├── examples/                   # Multi-language examples
+│   ├── cpp/                    # C++ examples
+│   ├── python/                 # Python examples
+│   ├── javascript/             # JavaScript examples
+│   └── models/                 # Robot URDF models
+│
+├── apps/                       # Complete applications
+│   └── visualization/          # Three.js visualization web app
+│       ├── src/
+│       ├── public/
+│       └── package.json
+│
+├── benchmarks/                 # Performance benchmarks
+│   ├── ik_benchmarks.cpp
+│   └── results/
+│
+├── docs/                       # Project documentation
+│   ├── api/                    # API reference
+│   │   ├── cpp/                # C++ API (Doxygen)
+│   │   ├── python/             # Python API (Sphinx)
+│   │   └── javascript/         # JavaScript API
+│   ├── guides/                 # User guides
+│   └── tutorials/              # Tutorials
+│
+├── third_party/                # Git submodules
 │   ├── eigen/
 │   ├── pugixml/
 │   ├── CppAD/
-│   ├── DaQP/
-│   └── nanobind/
-└── scripts/                # Build and setup scripts
+│   ├── daqp/
+│   ├── googletest/
+│   ├── nanobind/
+│   └── spdlog/
+│
+├── cmake/                      # CMake modules
+├── scripts/                    # Build and setup scripts
+├── openspec/                   # OpenSpec specifications
+└── CMakeLists.txt              # Root CMake configuration
 ```
 
 ## Dependencies
