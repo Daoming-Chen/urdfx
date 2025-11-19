@@ -59,7 +59,7 @@ set(URDFX_WASM_BINARY ${URDFX_WASM_OUTPUT_DIR}/urdfx.wasm)
 add_custom_command(TARGET ${URDFX_WASM_TARGET} POST_BUILD
     COMMAND ${CMAKE_COMMAND}
         -DURDFX_WASM_PATH=${URDFX_WASM_BINARY}
-        -P ${PROJECT_SOURCE_DIR}/wasm/cmake/CheckWasmSize.cmake
+        -P ${PROJECT_SOURCE_DIR}/bindings/wasm/cmake/CheckWasmSize.cmake
     BYPRODUCTS ${URDFX_WASM_BINARY}
     COMMENT "Checking urdfx.wasm binary size"
 )
@@ -71,6 +71,6 @@ install(FILES
 )
 
 install(FILES
-    ${PROJECT_SOURCE_DIR}/wasm/urdfx.d.ts
+    ${PROJECT_SOURCE_DIR}/bindings/wasm/urdfx.d.ts
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/urdfx/wasm
 )

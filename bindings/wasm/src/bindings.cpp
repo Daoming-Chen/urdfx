@@ -134,6 +134,15 @@ public:
         return std::shared_ptr<RobotHandle>(new RobotHandle(std::move(robot)));
     }
 
+    explicit RobotHandle(std::shared_ptr<urdfx::Robot> robot)
+        : robot_(std::move(robot)) {}
+
+    void ensureAlive() const {
+        if (!robot_) {
+            throw std::runtime_error("RobotHandle has been disposed.");
+        }
+    }
+
     const std::string& getName() const {
         ensureAlive();
         return robot_->getName();
@@ -201,15 +210,6 @@ public:
     }
 
 private:
-    explicit RobotHandle(std::shared_ptr<urdfx::Robot> robot)
-        : robot_(std::move(robot)) {}
-
-    void ensureAlive() const {
-        if (!robot_) {
-            throw std::runtime_error("RobotHandle has been disposed.");
-        }
-    }
-
     std::shared_ptr<urdfx::Robot> robot_;
 };
 
@@ -503,10 +503,22 @@ private:
 
 } // namespace
 
-EMSCRIPTEN_BINDINGS(urdfx_wasm_bindings) {
-    register_vector<double>("VectorDouble");
-    register_vector<std::string>("VectorString");
+val getBoxSize(const urdfx::Geometry& g) {
+    return val(std::array<double, 3>{g.box_size.x(), g.box_size.y(), g.box_size.z()});
+}
+void setBoxSize(urdfx::Geometry& g, val v) {
+    auto arr = toVectorDouble(v, 3, "box_size");
+    g.box_size = Eigen::Vector3d(arr[0], arr[1], arr[2]);
+}
+val getMeshScale(const urdfx::Geometry& g) {
+    return val(std::array<double, 3>{g.mesh_scale.x(), g.mesh_scale.y(), g.mesh_scale.z()});
+}
+void setMeshScale(urdfx::Geometry& g, val v) {
+    auto arr = toVectorDouble(v, 3, "mesh_scale");
+    g.mesh_scale = Eigen::Vector3d(arr[0], arr[1], arr[2]);
+}
 
+EMSCRIPTEN_BINDINGS(urdfx_wasm_bindings) {
     value_array<std::array<double, kMaxPosePositionSize>>("Vec3")
         .element(emscripten::index<0>())
         .element(emscripten::index<1>())
@@ -554,9 +566,130 @@ EMSCRIPTEN_BINDINGS(urdfx_wasm_bindings) {
         .field("solution", &IKResultData::solution)
         .field("error_history", &IKResultData::error_history);
 
+    value_object<urdfx::JointLimits>("JointLimits")
+        .field("lower", &urdfx::JointLimits::lower)
+        .field("upper", &urdfx::JointLimits::upper)
+        .field("effort", &urdfx::JointLimits::effort)
+        .field("velocity", &urdfx::JointLimits::velocity);
+
+    value_object<urdfx::JointDynamics>("JointDynamics")
+        .field("damping", &urdfx::JointDynamics::damping)
+        .field("friction", &urdfx::JointDynamics::friction);
+
+    value_object<urdfx::Geometry>("Geometry")
+        .field("type", &urdfx::Geometry::type)
+        .field("box_size", 
+            std::function<val(const urdfx::Geometry&)>(getBoxSize), 
+            std::function<void(urdfx::Geometry&, val)>(setBoxSize))
+        .field("cylinder_radius", &urdfx::Geometry::cylinder_radius)
+        .field("cylinder_length", &urdfx::Geometry::cylinder_length)
+        .field("sphere_radius", &urdfx::Geometry::sphere_radius)
+        .field("mesh_filename", &urdfx::Geometry::mesh_filename)
+        .field("mesh_scale", 
+            std::function<val(const urdfx::Geometry&)>(getMeshScale), 
+            std::function<void(urdfx::Geometry&, val)>(setMeshScale));
+
     enum_<urdfx::JacobianType>("JacobianType")
         .value("Analytic", urdfx::JacobianType::Analytic)
         .value("Geometric", urdfx::JacobianType::Geometric);
+
+    enum_<urdfx::GeometryType>("GeometryType")
+        .value("Box", urdfx::GeometryType::Box)
+        .value("Cylinder", urdfx::GeometryType::Cylinder)
+        .value("Sphere", urdfx::GeometryType::Sphere)
+        .value("Mesh", urdfx::GeometryType::Mesh);
+
+    enum_<urdfx::JointType>("JointType")
+        .value("Fixed", urdfx::JointType::Fixed)
+        .value("Revolute", urdfx::JointType::Revolute)
+        .value("Continuous", urdfx::JointType::Continuous)
+        .value("Prismatic", urdfx::JointType::Prismatic)
+        .value("Floating", urdfx::JointType::Floating)
+        .value("Planar", urdfx::JointType::Planar);
+
+    class_<urdfx::Transform>("Transform")
+        .constructor<>()
+        .class_function("fromPositionQuaternion", emscripten::optional_override([](const std::array<double, 3>& pos, const std::array<double, 4>& quat) {
+            return urdfx::Transform::fromPositionQuaternion(
+                Eigen::Vector3d(pos[0], pos[1], pos[2]),
+                Eigen::Quaterniond(quat[0], quat[1], quat[2], quat[3]));
+        }))
+        .function("asMatrix", emscripten::optional_override([](const urdfx::Transform& self) {
+            MatrixData md;
+            md.rows = 4;
+            md.cols = 4;
+            Eigen::Matrix4d m = self.asMatrix();
+            md.data.assign(m.data(), m.data() + 16);
+            return md;
+        }))
+        .function("asPose", emscripten::optional_override([](const urdfx::Transform& self) {
+            auto [pos, quat] = self.asPositionQuaternion();
+            PoseData pd;
+            pd.position = {pos.x(), pos.y(), pos.z()};
+            pd.quaternion = {quat.w(), quat.x(), quat.y(), quat.z()};
+            return pd;
+        }))
+        .function("translation", emscripten::optional_override([](const urdfx::Transform& self) {
+            Eigen::Vector3d t = self.translation();
+            return std::array<double, 3>{t.x(), t.y(), t.z()};
+        }));
+
+    class_<urdfx::Visual>("Visual")
+        .property("name", &urdfx::Visual::name)
+        .property("origin", &urdfx::Visual::origin)
+        .property("geometry", &urdfx::Visual::geometry)
+        .function("getColor", emscripten::optional_override([](const urdfx::Visual& v) { 
+            if (v.color) return val(std::array<double, 4>{v.color->x(), v.color->y(), v.color->z(), v.color->w()});
+            return val::null();
+        }))
+        .function("getMaterialName", emscripten::optional_override([](const urdfx::Visual& v) {
+            if (v.material_name) return val(*v.material_name);
+            return val::null();
+        }));
+
+    class_<urdfx::Collision>("Collision")
+        .property("name", &urdfx::Collision::name)
+        .property("origin", &urdfx::Collision::origin)
+        .property("geometry", &urdfx::Collision::geometry);
+
+    class_<urdfx::Inertial>("Inertial")
+        .property("origin", &urdfx::Inertial::origin)
+        .property("mass", &urdfx::Inertial::mass)
+        .function("getInertia", emscripten::optional_override([](const urdfx::Inertial& i) {
+            MatrixData md; md.rows = 3; md.cols = 3;
+            md.data.assign(i.inertia.data(), i.inertia.data() + 9);
+            return md;
+        }));
+
+    class_<urdfx::Link>("Link")
+        .smart_ptr<std::shared_ptr<urdfx::Link>>("Link")
+        .function("getName", &urdfx::Link::getName)
+        .function("getInertial", emscripten::optional_override([](const urdfx::Link& self) {
+            if (self.getInertial()) return val(*self.getInertial());
+            return val::null();
+        }))
+        .function("getVisuals", &urdfx::Link::getVisuals)
+        .function("getCollisions", &urdfx::Link::getCollisions);
+
+    class_<urdfx::Joint>("Joint")
+        .smart_ptr<std::shared_ptr<urdfx::Joint>>("Joint")
+        .function("getName", &urdfx::Joint::getName)
+        .function("getType", &urdfx::Joint::getType)
+        .function("getParentLink", &urdfx::Joint::getParentLink)
+        .function("getChildLink", &urdfx::Joint::getChildLink)
+        .function("getOrigin", &urdfx::Joint::getOrigin)
+        .function("getAxis", emscripten::optional_override([](const urdfx::Joint& self) {
+            Eigen::Vector3d a = self.getAxis();
+            return std::array<double, 3>{a.x(), a.y(), a.z()};
+        }))
+        .function("getLimits", emscripten::optional_override([](const urdfx::Joint& self) {
+            if (self.getLimits()) return val(*self.getLimits());
+            return val::null();
+        }))
+        .function("getDynamics", emscripten::optional_override([](const urdfx::Joint& self) {
+            if (self.getDynamics()) return val(*self.getDynamics());
+            return val::null();
+        }));
 
     class_<RobotHandle>("Robot")
         .smart_ptr<std::shared_ptr<RobotHandle>>("Robot")
@@ -571,6 +704,26 @@ EMSCRIPTEN_BINDINGS(urdfx_wasm_bindings) {
         .function("getDOF", &RobotHandle::getDOF)
         .function("getLowerLimits", &RobotHandle::getLowerLimits)
         .function("getUpperLimits", &RobotHandle::getUpperLimits)
+        .function("getRootLink", emscripten::optional_override([](const RobotHandle& self) {
+            self.ensureAlive();
+            return self.getRobot()->getRootLink();
+        }))
+        .function("getLinks", emscripten::optional_override([](const RobotHandle& self) {
+            self.ensureAlive();
+            return self.getRobot()->getLinks();
+        }))
+        .function("getJoints", emscripten::optional_override([](const RobotHandle& self) {
+            self.ensureAlive();
+            return self.getRobot()->getJoints();
+        }))
+        .function("getLink", emscripten::optional_override([](const RobotHandle& self, const std::string& name) {
+            self.ensureAlive();
+            return self.getRobot()->getLink(name);
+        }))
+        .function("getJoint", emscripten::optional_override([](const RobotHandle& self, const std::string& name) {
+            self.ensureAlive();
+            return self.getRobot()->getJoint(name);
+        }))
         .function("dispose", &RobotHandle::dispose)
         .function("isDisposed", &RobotHandle::isDisposed);
 
@@ -641,4 +794,11 @@ EMSCRIPTEN_BINDINGS(urdfx_wasm_bindings) {
             return self.solve(target_pose, guess);
         }))
         .function("dispose", &SQPIKSolverHandle::dispose);
+
+    register_vector<double>("VectorDouble");
+    register_vector<std::string>("VectorString");
+    register_vector<urdfx::Visual>("VectorVisual");
+    register_vector<urdfx::Collision>("VectorCollision");
+    register_vector<std::shared_ptr<urdfx::Link>>("VectorLink");
+    register_vector<std::shared_ptr<urdfx::Joint>>("VectorJoint");
 }

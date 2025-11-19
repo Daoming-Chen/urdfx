@@ -63,6 +63,98 @@ export const enum JacobianType {
     Geometric = 1,
 }
 
+export const enum GeometryType {
+    Box = 0,
+    Cylinder = 1,
+    Sphere = 2,
+    Mesh = 3,
+}
+
+export const enum JointType {
+    Fixed = 0,
+    Revolute = 1,
+    Continuous = 2,
+    Prismatic = 3,
+    Floating = 4,
+    Planar = 5,
+}
+
+export class Transform {
+    constructor();
+    static fromPositionQuaternion(position: [number, number, number], quaternion: [number, number, number, number]): Transform;
+    asMatrix(): Matrix;
+    asPose(): Pose;
+    translation(): [number, number, number];
+}
+
+export interface JointLimits {
+    lower: number;
+    upper: number;
+    effort: number;
+    velocity: number;
+}
+
+export interface JointDynamics {
+    damping: number;
+    friction: number;
+}
+
+export interface Geometry {
+    type: GeometryType;
+    box_size: [number, number, number];
+    cylinder_radius: number;
+    cylinder_length: number;
+    sphere_radius: number;
+    mesh_filename: string;
+    mesh_scale: [number, number, number];
+}
+
+export class Visual {
+    get name(): string;
+    set name(value: string);
+    get origin(): Transform;
+    set origin(value: Transform);
+    get geometry(): Geometry;
+    set geometry(value: Geometry);
+    getColor(): [number, number, number, number] | null;
+    getMaterialName(): string | null;
+}
+
+export class Collision {
+    get name(): string;
+    set name(value: string);
+    get origin(): Transform;
+    set origin(value: Transform);
+    get geometry(): Geometry;
+    set geometry(value: Geometry);
+}
+
+export class Inertial {
+    get origin(): Transform;
+    set origin(value: Transform);
+    get mass(): number;
+    set mass(value: number);
+    getInertia(): Matrix;
+}
+
+export class Link {
+    getName(): string;
+    getInertial(): Inertial | null;
+    getVisuals(): EmbindVector<Visual>;
+    getCollisions(): EmbindVector<Collision>;
+}
+
+export class Joint {
+    getName(): string;
+    getType(): JointType;
+    getParentLink(): string;
+    getChildLink(): string;
+    getOrigin(): Transform;
+    getAxis(): [number, number, number];
+    getLimits(): JointLimits | null;
+    getDynamics(): JointDynamics | null;
+}
+
 export class Robot {
     static fromURDFString(urdf: string, baseDir?: string): Robot;
 
@@ -71,6 +163,11 @@ export class Robot {
     getDOF(): number;
     getLowerLimits(): Float64Array | number[] | EmbindVector<number>;
     getUpperLimits(): Float64Array | number[] | EmbindVector<number>;
+    getRootLink(): string;
+    getLinks(): EmbindVector<Link>;
+    getJoints(): EmbindVector<Joint>;
+    getLink(name: string): Link | null;
+    getJoint(name: string): Joint | null;
     dispose(): void;
     isDisposed(): boolean;
 }
@@ -112,9 +209,29 @@ export interface UrdfxModule {
     ForwardKinematics: typeof ForwardKinematics;
     JacobianCalculator: typeof JacobianCalculator;
     SQPIKSolver: typeof SQPIKSolver;
+    Transform: typeof Transform;
+    Link: typeof Link;
+    Joint: typeof Joint;
+    Visual: typeof Visual;
+    Collision: typeof Collision;
+    Inertial: typeof Inertial;
     JacobianType: {
         Analytic: JacobianType;
         Geometric: JacobianType;
+    };
+    GeometryType: {
+        Box: GeometryType;
+        Cylinder: GeometryType;
+        Sphere: GeometryType;
+        Mesh: GeometryType;
+    };
+    JointType: {
+        Fixed: JointType;
+        Revolute: JointType;
+        Continuous: JointType;
+        Prismatic: JointType;
+        Floating: JointType;
+        Planar: JointType;
     };
     HEAPF64: Float64Array;
     _malloc(size: number): number;
