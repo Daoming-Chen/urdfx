@@ -58,27 +58,58 @@ solution = ik.solve(target_pose)
 
 ### JavaScript/WebAssembly Example
 
+```bash
+# Install from npm
+npm install urdfx
+```
+
 ```javascript
-import urdfx from './urdfx.js';
+const createUrdfxModule = require('urdfx');
 
 // Initialize WASM module
-const module = await urdfx();
+const urdfx = await createUrdfxModule();
 
-// Load robot
-const robot = module.Robot.fromURDF(urdfData);
+// Load robot from URDF string
+const urdfXml = `<?xml version="1.0"?>
+<robot name="my_robot">
+  <!-- Your URDF content -->
+</robot>`;
+
+const robot = urdfx.Robot.fromURDFString(urdfXml);
 
 // Compute forward kinematics
-const fk = new module.ForwardKinematics(robot);
+const fk = new urdfx.ForwardKinematics(robot);
 const pose = fk.compute([0.0, -1.57, 0.0, 0.0, 0.0, 0.0]);
 
 // Solve inverse kinematics
-const ik = new module.IKSolver(robot);
-const solution = ik.solve(targetPose);
+const ik = new urdfx.SQPIKSolver(robot);
+const targetPose = {
+  position: [0.5, 0.0, 0.5],
+  quaternion: [1.0, 0.0, 0.0, 0.0]
+};
+const solution = ik.solve(targetPose, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+
+// Clean up
+ik.dispose();
+fk.dispose();
+robot.dispose();
 ```
 
 ## Installation
 
-### Prerequisites
+### npm Package (WebAssembly)
+
+The easiest way to use urdfx in JavaScript/TypeScript projects:
+
+```bash
+npm install urdfx
+```
+
+Available on npm: https://www.npmjs.com/package/urdfx
+
+### Building from Source
+
+#### Prerequisites
 
 - C++20 compatible compiler (GCC 10+, Clang 12+, MSVC 19.29+ / Visual Studio 2019 16.11+)
 - CMake 3.20 or later
@@ -238,6 +269,10 @@ urdfx/
 │
 ├── cmake/                      # CMake modules
 ├── scripts/                    # Build and setup scripts
+│   ├── build-wasm.ps1/sh      # Build WASM bindings
+│   ├── publish-npm.ps1/sh     # Publish to npm (Windows/Linux)
+│   ├── setup.ps1/sh           # Development environment setup
+│   └── PUBLISH_README.md      # npm publishing guide
 ├── openspec/                   # OpenSpec specifications
 └── CMakeLists.txt              # Root CMake configuration
 ```
