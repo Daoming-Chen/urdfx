@@ -44,7 +44,6 @@ target_link_libraries(urdfx
         spdlog::spdlog
     PRIVATE
         pugixml::pugixml
-        CppAD::CppAD
         daqp::daqp
 )
 

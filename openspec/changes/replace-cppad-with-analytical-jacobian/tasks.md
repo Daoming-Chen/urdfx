@@ -14,32 +14,32 @@
   - Add new source file to build
 
 ### 1.2 Implement Core Geometric Jacobian Algorithm
-- [ ] Implement `computeAnalyticalJacobian()` private method
+- [x] Implement `computeAnalyticalJacobian()` private method
   - Forward pass: accumulate transforms and cache joint frames
   - Handle revolute joints (axis-angle rotation)
   - Handle prismatic joints (translation along axis)
   - Handle fixed joints (static transform only)
   - Extract `z_i` (axis in world frame) and `p_i` (position in world frame)
-- [ ] Implement Jacobian column computation
+- [x] Implement Jacobian column computation
   - Linear part: `z_i × (p_ee - p_i)` using `Eigen::Vector3d::cross()`
   - Angular part: `z_i` directly
   - Fill 6×n output matrix column-by-column
-- [ ] Add optimization for Z-axis revolute joints (common case)
+- [x] Add optimization for Z-axis revolute joints (common case)
   - Use simplified rotation matrix for standard DH parameters
 
 ### 1.3 Implement Public API Methods
-- [ ] Implement `compute(joint_angles, type, target_link)`
+- [x] Implement `compute(joint_angles, type, target_link)`
   - Call core geometric method
   - Apply Jacobian type conversion (Analytic ↔ Geometric)
   - Support target_link parameter (use chain cache)
-- [ ] Implement `isSingular(joint_angles, threshold, type, target_link)`
+- [x] Implement `isSingular(joint_angles, threshold, type, target_link)`
   - Reuse existing SVD-based logic
   - Use analytical Jacobian as input
-- [ ] Implement `getManipulability(joint_angles, type, target_link)`
+- [x] Implement `getManipulability(joint_angles, type, target_link)`
   - Reuse existing determinant-based calculation
-- [ ] Implement `getConditionNumber(joint_angles, type, target_link)`
+- [x] Implement `getConditionNumber(joint_angles, type, target_link)`
   - Reuse existing SVD condition number calculation
-- [ ] Implement static `convertJacobian(jacobian, pose, from, to)`
+- [x] Implement static `convertJacobian(jacobian, pose, from, to)`
   - Copy existing adjoint matrix conversion logic (no changes needed)
 
 ## Phase 2: Validation & Testing (Days 3-5)
@@ -77,7 +77,7 @@
   - Verify smooth convergence
 
 ### 2.3 Benchmark Tests
-- [ ] Add micro-benchmark for Jacobian computation
+- [x] Add micro-benchmark for Jacobian computation
   - Create `benchmarks/jacobian_benchmarks.cpp`
   - Benchmark analytical method in isolation
   - Target: <5µs for 7-DOF arm on i7-12700K
@@ -131,7 +131,7 @@
 ## Phase 4: Cleanup & Documentation (Days 7-10)
 
 ### 4.1 Remove CppAD Implementation
-- [ ] Delete old `JacobianCalculator` class
+- [x] Delete old `JacobianCalculator` class
   - Remove CppAD-specific code from `core/src/kinematics.cpp`
   - Remove `ADForwardKinematics` helper class
   - Remove tape caching and mutex logic
@@ -139,7 +139,7 @@
   - Update header: `analytical_jacobian.h` → part of `kinematics.h`
   - Update source file
   - Update all includes in test and example files
-- [ ] Remove CppAD headers
+- [x] Remove CppAD headers
   - Delete `#include <cppad/cppad.hpp>` from `kinematics.cpp`
   - Remove pragma diagnostic blocks for CppAD warnings
   - Clean up `CMakeLists.txt` include directories
@@ -148,7 +148,7 @@
 - [ ] Update `CMakeLists.txt` (root)
   - Remove `add_subdirectory(third_party/CppAD)`
   - Remove CppAD from `find_package()` or `FetchContent`
-- [ ] Update `cmake/Dependencies.cmake`
+- [x] Update `cmake/Dependencies.cmake`
   - Remove CppAD configuration
 - [ ] Remove CppAD submodule
   - Run `git submodule deinit third_party/CppAD`

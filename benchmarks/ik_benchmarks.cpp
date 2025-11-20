@@ -197,7 +197,6 @@ static void BM_IK_ColdStart(benchmark::State& state) {
             total_iterations += status.iterations;
             successes += status.converged ? 1 : 0;
             
-            // Compute FK and measure error
             if (status.converged) {
                 Transform achieved = fk->compute(result);
                 Eigen::Vector3d pos_error = achieved.translation() - sample.pose.translation();
@@ -248,7 +247,6 @@ static void BM_IK_WarmStart(benchmark::State& state) {
             total_iterations += status.iterations;
             successes += status.converged ? 1 : 0;
             
-            // Compute FK and measure error
             if (status.converged) {
                 Transform achieved = fk->compute(result);
                 Eigen::Vector3d pos_error = achieved.translation() - sample.pose.translation();
@@ -276,6 +274,8 @@ static void BM_IK_WarmStart(benchmark::State& state) {
     state.counters["avg_rotation_error_deg"] = (total_rotation_error / static_cast<double>(successes)) * 180.0 / std::numbers::pi;
 }
 
+BENCHMARK(BM_IK_WarmStart)->Unit(benchmark::kMicrosecond);
+
 static void BM_IK_Trajectory(benchmark::State& state) {
     const auto& fx = fixture();
     auto solver = fx.makeSolver(true);
@@ -299,7 +299,6 @@ static void BM_IK_Trajectory(benchmark::State& state) {
             total_iterations += status.iterations;
             successes += status.converged ? 1 : 0;
             
-            // Compute FK and measure error
             if (status.converged) {
                 Transform achieved = fk->compute(result);
                 Eigen::Vector3d pos_error = achieved.translation() - pose.translation();
@@ -322,6 +321,4 @@ static void BM_IK_Trajectory(benchmark::State& state) {
     state.counters["avg_rotation_error_deg"] = (total_rotation_error / static_cast<double>(successes)) * 180.0 / std::numbers::pi;
 }
 
-BENCHMARK(BM_IK_ColdStart)->Unit(benchmark::kMicrosecond);
-BENCHMARK(BM_IK_WarmStart)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BM_IK_Trajectory)->Unit(benchmark::kMicrosecond);

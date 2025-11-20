@@ -1,19 +1,5 @@
 #include "urdfx/kinematics.h"
 #include "urdfx/logging.h"
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-#elif defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable: 4244)  // Conversion warnings
-#pragma warning(disable: 4267)  // size_t conversion warnings
-#endif
-#include <cppad/cppad.hpp>
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#elif defined(_MSC_VER)
-#pragma warning(pop)
-#endif
 #include <stdexcept>
 #include <algorithm>
 #include <unordered_set>
@@ -23,16 +9,9 @@
 #include <cmath>
 #include <utility>
 #include <mutex>
+#include <iostream>
 
 namespace urdfx {
-
-void JacobianCalculator::TapeData::TapeDeleter::operator()(void* ptr) const {
-    delete static_cast<CppAD::ADFun<double, double>*>(ptr);
-}
-
-CppAD::ADFun<double, double>* JacobianCalculator::getTapePointer(const TapeData& data) {
-    return static_cast<CppAD::ADFun<double, double>*>(data.tape.get());
-}
 
 // ============================================================================
 // KinematicChain Implementation
@@ -275,11 +254,13 @@ Transform ForwardKinematics::computeToJointIndex(
         switch (joint->getType()) {
             case JointType::Revolute:
             case JointType::Continuous: {
+                // Rotation around joint axis
                 Eigen::AngleAxisd rotation(q, joint->getAxis());
                 joint_transform.linear() = rotation.toRotationMatrix();
                 break;
             }
             case JointType::Prismatic: {
+                // Translation along joint axis
                 joint_transform.translation() = q * joint->getAxis();
                 break;
             }
@@ -315,19 +296,12 @@ void ForwardKinematics::checkJointLimits(const Eigen::VectorXd& joint_angles) co
 
 namespace {
 
-constexpr size_t kPoseVectorSize = 12;
-std::mutex g_cppad_mutex;
-
 Eigen::Matrix3d skew(const Eigen::Vector3d& v) {
     Eigen::Matrix3d m;
     m << 0.0, -v.z(), v.y(),
          v.z(), 0.0, -v.x(),
         -v.y(), v.x(), 0.0;
     return m;
-}
-
-Eigen::Vector3d vee(const Eigen::Matrix3d& m) {
-    return Eigen::Vector3d(m(2, 1), m(0, 2), m(1, 0));
 }
 
 Eigen::Matrix<double, 6, 6> adjointMatrix(const Transform& T) {
@@ -344,17 +318,11 @@ Eigen::Matrix<double, 6, 6> adjointInverseMatrix(const Transform& T) {
     return adjointMatrix(T.inverse());
 }
 
-Eigen::Matrix<double, 6, 6> adMatrix(const Eigen::Matrix<double, 6, 1>& twist) {
-    Eigen::Matrix<double, 6, 6> ad = Eigen::Matrix<double, 6, 6>::Zero();
-    const Eigen::Vector3d v = twist.head<3>();
-    const Eigen::Vector3d w = twist.tail<3>();
-    ad.block<3, 3>(0, 0) = skew(w);
-    ad.block<3, 3>(3, 0) = skew(v);
-    ad.block<3, 3>(3, 3) = skew(w);
-    return ad;
-}
-
 } // namespace
+
+// ============================================================================
+// JacobianCalculator Implementation
+// ============================================================================
 
 JacobianCalculator::JacobianCalculator(
     std::shared_ptr<const Robot> robot,
@@ -379,11 +347,6 @@ JacobianCalculator::JacobianCalculator(
     if (!robot_->getLink(base_link_)) {
         throw std::invalid_argument("Base link not found in robot model: " + base_link_);
     }
-
-    {
-        std::lock_guard<std::mutex> lock(g_cppad_mutex);
-        ensureTape(default_end_link_);
-    }
 }
 
 std::string JacobianCalculator::resolveLink(const std::string& target_link) const {
@@ -399,63 +362,14 @@ const KinematicChain& JacobianCalculator::ensureChain(const std::string& link) c
     return *it->second;
 }
 
-const ForwardKinematics& JacobianCalculator::ensureForwardKinematics(const std::string& link) const {
-    auto it = fk_cache_.find(link);
-    if (it == fk_cache_.end()) {
-        auto fk = std::make_unique<ForwardKinematics>(robot_, link, base_link_);
-        it = fk_cache_.emplace(link, std::move(fk)).first;
+JacobianCalculator::JointFrameCache& JacobianCalculator::ensureCache(const std::string& link, size_t dof) const {
+    auto it = frame_cache_.find(link);
+    if (it == frame_cache_.end()) {
+        auto [new_it, _] = frame_cache_.emplace(link, JointFrameCache());
+        it = new_it;
     }
-    return *it->second;
-}
-
-JacobianCalculator::TapeData& JacobianCalculator::ensureTape(const std::string& link) const {
-    auto it = tape_cache_.find(link);
-    if (it != tape_cache_.end()) {
-        return *it->second;
-    }
-
-    const auto& chain = ensureChain(link);
-    const size_t dof = chain.getNumJoints();
-    if (dof == 0) {
-        throw std::runtime_error("JacobianCalculator requires at least one actuated joint");
-    }
-
-    std::vector<CppAD::AD<double>> ad_q(dof);
-    for (size_t i = 0; i < dof; ++i) {
-        ad_q[i] = 0.0;
-    }
-    CppAD::Independent(ad_q);
-
-    Eigen::Matrix<CppAD::AD<double>, Eigen::Dynamic, 1> joint_vec(dof);
-    for (size_t i = 0; i < dof; ++i) {
-        joint_vec[i] = ad_q[i];
-    }
-
-    auto T = ad_fk_.compute(chain, joint_vec);
-
-    std::vector<CppAD::AD<double>> outputs(kPoseVectorSize);
-    for (int i = 0; i < 3; ++i) {
-        outputs[i] = T.translation()(i);
-    }
-
-    size_t cursor = 3;
-    const auto& rot = T.rotation();
-    for (int r = 0; r < 3; ++r) {
-        for (int c = 0; c < 3; ++c) {
-            outputs[cursor++] = rot(r, c);
-        }
-    }
-
-    auto tape = std::make_unique<CppAD::ADFun<double, double>>(ad_q, outputs);
-    tape->optimize();
-
-    auto data = std::make_unique<TapeData>();
-    data->tape.reset(static_cast<void*>(tape.release()));
-    data->dof = dof;
-
-    auto [new_it, inserted] = tape_cache_.emplace(link, std::move(data));
-    (void)inserted;
-    return *new_it->second;
+    it->second.resize(dof);
+    return it->second;
 }
 
 Eigen::MatrixXd JacobianCalculator::compute(
@@ -463,30 +377,33 @@ Eigen::MatrixXd JacobianCalculator::compute(
     JacobianType type,
     const std::string& target_link) const
 {
-    std::lock_guard<std::mutex> lock(g_cppad_mutex);
     const std::string link = resolveLink(target_link);
-    auto& tape = ensureTape(link);
+    const auto& chain = ensureChain(link);
+    const size_t dof = chain.getNumJoints();
 
-    if (static_cast<size_t>(joint_angles.size()) < tape.dof) {
+    if (static_cast<size_t>(joint_angles.size()) < dof) {
         throw std::invalid_argument("Joint vector size is smaller than chain DOF for Jacobian computation");
     }
 
-    Eigen::VectorXd joint_subset = joint_angles.head(tape.dof);
+    // Get thread-local cache for this link
+    auto& cache = ensureCache(link, dof);
+    
+    Eigen::MatrixXd J(6, dof);
+    computeAnalyticalJacobian(joint_angles, chain, cache, J);
 
-    std::vector<double> x(tape.dof);
-    for (size_t i = 0; i < tape.dof; ++i) {
-        x[i] = joint_subset[i];
+    if (type == JacobianType::Analytic) {
+        return J;
+    } else {
+        // Ensure FK exists for conversion
+        auto fk_it = fk_cache_.find(link);
+        if (fk_it == fk_cache_.end()) {
+            auto fk = std::make_unique<ForwardKinematics>(robot_, link, base_link_);
+            fk_it = fk_cache_.emplace(link, std::move(fk)).first;
+        }
+        Transform pose = fk_it->second->compute(joint_angles.head(dof));
+        
+        return convertJacobian(J, pose, JacobianType::Analytic, JacobianType::Geometric);
     }
-
-    std::vector<double> raw = getTapePointer(tape)->Jacobian(x);
-    Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> raw_map(
-        raw.data(), kPoseVectorSize, tape.dof);
-    Eigen::MatrixXd raw_matrix = raw_map;
-
-    const auto& fk = ensureForwardKinematics(link);
-    Transform pose = fk.compute(joint_subset);
-    Eigen::MatrixXd spatial = buildSpatialJacobian(raw_matrix, pose);
-    return convertIfNeeded(spatial, pose, type);
 }
 
 Eigen::MatrixXd JacobianCalculator::computeJacobianDerivative(
@@ -495,47 +412,86 @@ Eigen::MatrixXd JacobianCalculator::computeJacobianDerivative(
     JacobianType type,
     const std::string& target_link) const
 {
-    std::lock_guard<std::mutex> lock(g_cppad_mutex);
-    const std::string link = resolveLink(target_link);
-    auto& tape = ensureTape(link);
+    (void)joint_angles;
+    (void)joint_velocities;
+    (void)type;
+    (void)target_link;
+    throw std::runtime_error("computeJacobianDerivative not implemented for Analytical Jacobian");
+}
 
-    if (static_cast<size_t>(joint_angles.size()) < tape.dof ||
-        static_cast<size_t>(joint_velocities.size()) < tape.dof) {
-        throw std::invalid_argument("Joint vectors must be at least as large as chain DOF for Jacobian derivative");
+void JacobianCalculator::computeAnalyticalJacobian(
+    const Eigen::VectorXd& joint_angles,
+    const KinematicChain& chain,
+    JointFrameCache& cache,
+    Eigen::MatrixXd& J_out) const
+{
+    const auto& joints = chain.getJoints();
+    size_t dof = joints.size();
+
+    // Initialize world transform accumulator
+    Eigen::Isometry3d T_world = Eigen::Isometry3d::Identity();
+
+    // Forward pass: Compute all joint frames in world coordinates
+    for (size_t i = 0; i < dof; ++i) {
+        const auto& joint = joints[i];
+        double q = joint_angles[i];
+
+        // 1. Apply static origin transform
+        T_world = T_world * joint->getOrigin().getTransform();
+
+        // 2. Cache joint axis and position in world frame BEFORE applying joint rotation/translation
+        Eigen::Vector3d axis_local = joint->getAxis();
+        cache.z_world[i] = T_world.linear() * axis_local;
+        cache.p_world[i] = T_world.translation();
+
+        // 3. Apply joint-dependent transform
+        Eigen::Isometry3d joint_transform = Eigen::Isometry3d::Identity();
+        
+        switch (joint->getType()) {
+            case JointType::Revolute:
+            case JointType::Continuous: {
+                // Optimization for common Z-axis case (0, 0, 1)
+                if (axis_local.x() == 0 && axis_local.y() == 0 && axis_local.z() == 1) {
+                     double c = std::cos(q);
+                     double s = std::sin(q);
+                     joint_transform.linear() << c, -s, 0,
+                                                 s,  c, 0,
+                                                 0,  0, 1;
+                } else {
+                    Eigen::AngleAxisd rotation(q, axis_local);
+                    joint_transform.linear() = rotation.toRotationMatrix();
+                }
+                break;
+            }
+            case JointType::Prismatic: {
+                joint_transform.translation() = q * axis_local;
+                break;
+            }
+            default:
+                break;
+        }
+        
+        T_world = T_world * joint_transform;
     }
 
-    Eigen::VectorXd joint_subset = joint_angles.head(tape.dof);
-    Eigen::VectorXd velocity_subset = joint_velocities.head(tape.dof);
+    // Store end-effector position
+    cache.p_ee = T_world.translation();
 
-    std::vector<double> x(tape.dof);
-    for (size_t i = 0; i < tape.dof; ++i) {
-        x[i] = joint_subset[i];
+    // Backward pass/Fill: Compute Jacobian columns
+    for (size_t i = 0; i < dof; ++i) {
+        const auto& joint = joints[i];
+        const Eigen::Vector3d& z_i = cache.z_world[i];
+        const Eigen::Vector3d& p_i = cache.p_world[i];
+
+        if (joint->getType() == JointType::Prismatic) {
+            // Prismatic: Linear velocity is z_i, Angular velocity is 0
+            J_out.col(i) << z_i, Eigen::Vector3d::Zero();
+        } else {
+            // Revolute: Linear velocity is z_i x (p_ee - p_i), Angular velocity is z_i
+            Eigen::Vector3d p_diff = cache.p_ee - p_i;
+            J_out.col(i) << z_i.cross(p_diff), z_i;
+        }
     }
-
-    std::vector<double> raw = getTapePointer(tape)->Jacobian(x);
-    Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> raw_map(
-        raw.data(), kPoseVectorSize, tape.dof);
-    Eigen::MatrixXd raw_matrix = raw_map;
-
-    const auto& fk = ensureForwardKinematics(link);
-    Transform pose = fk.compute(joint_subset);
-    Eigen::MatrixXd spatial = buildSpatialJacobian(raw_matrix, pose);
-
-    Eigen::MatrixXd raw_dot(kPoseVectorSize, tape.dof);
-    std::vector<double> w(kPoseVectorSize, 0.0);
-    for (size_t output_idx = 0; output_idx < kPoseVectorSize; ++output_idx) {
-        w[output_idx] = 1.0;
-        std::vector<double> hess = getTapePointer(tape)->Hessian(x, w);
-        w[output_idx] = 0.0;
-
-        Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> H(
-            hess.data(), tape.dof, tape.dof);
-        Eigen::VectorXd grad_dot = H * velocity_subset;
-        raw_dot.row(output_idx) = grad_dot.transpose();
-    }
-
-    Eigen::MatrixXd spatial_dot = buildSpatialJacobianDerivative(raw_dot, pose);
-    return convertDerivativeIfNeeded(spatial, spatial_dot, pose, velocity_subset, type);
 }
 
 bool JacobianCalculator::isSingular(
@@ -604,65 +560,6 @@ Eigen::MatrixXd JacobianCalculator::convertJacobian(
     }
 
     throw std::invalid_argument("Unsupported Jacobian conversion requested");
-}
-
-Eigen::MatrixXd JacobianCalculator::buildSpatialJacobian(
-    const Eigen::MatrixXd& raw_pose_jac,
-    const Transform& pose) const
-{
-    Eigen::MatrixXd J(6, raw_pose_jac.cols());
-    J.topRows(3) = raw_pose_jac.topRows(3);
-
-    const Eigen::Matrix3d R = pose.rotation();
-    for (int col = 0; col < J.cols(); ++col) {
-        Eigen::Matrix3d dR = Eigen::Matrix3d::Zero();
-        for (int r = 0; r < 3; ++r) {
-            for (int c = 0; c < 3; ++c) {
-                dR(r, c) = raw_pose_jac(3 + r * 3 + c, col);
-            }
-        }
-        Eigen::Matrix3d omega_skew = dR * R.transpose();
-        J.block<3, 1>(3, col) = vee(omega_skew);
-    }
-
-    return J;
-}
-
-Eigen::MatrixXd JacobianCalculator::buildSpatialJacobianDerivative(
-    const Eigen::MatrixXd& raw_pose_jac_dot,
-    const Transform& pose) const
-{
-    return buildSpatialJacobian(raw_pose_jac_dot, pose);
-}
-
-Eigen::MatrixXd JacobianCalculator::convertIfNeeded(
-    const Eigen::MatrixXd& spatial_jac,
-    const Transform& pose,
-    JacobianType type) const
-{
-    if (type == JacobianType::Analytic) {
-        return spatial_jac;
-    }
-    return convertJacobian(spatial_jac, pose, JacobianType::Analytic, JacobianType::Geometric);
-}
-
-Eigen::MatrixXd JacobianCalculator::convertDerivativeIfNeeded(
-    const Eigen::MatrixXd& spatial_jac,
-    const Eigen::MatrixXd& spatial_jac_dot,
-    const Transform& pose,
-    const Eigen::VectorXd& joint_velocities,
-    JacobianType type) const
-{
-    if (type == JacobianType::Analytic) {
-        return spatial_jac_dot;
-    }
-
-    Eigen::MatrixXd J_body = convertJacobian(spatial_jac, pose, JacobianType::Analytic, JacobianType::Geometric);
-    Eigen::MatrixXd J_body_dot = convertJacobian(spatial_jac_dot, pose, JacobianType::Analytic, JacobianType::Geometric);
-
-    Eigen::Matrix<double, 6, 1> twist_body = J_body * joint_velocities;
-    J_body_dot -= adMatrix(twist_body) * J_body;
-    return J_body_dot;
 }
 
 } // namespace urdfx

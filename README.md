@@ -6,7 +6,7 @@ A modern C++20 robotics kinematics library providing URDF parsing, forward kinem
 
 - **URDF Parsing**: Parse Unified Robot Description Format (URDF) files using pugixml
 - **Forward Kinematics**: Compute end-effector pose from joint angles using Eigen transformations
-- **Jacobian Computation**: Automatic differentiation-based Jacobian calculation using CppAD
+- **Jacobian Computation**: Analytical Jacobian calculation using geometric methods
 - **Inverse Kinematics**: SQP-based IK solver with joint limit constraints using DaQP
 - **Python Bindings**: NumPy-compatible Python interface via nanobind
 - **WebAssembly Support**: Browser-based robotics applications via Emscripten
@@ -282,7 +282,6 @@ urdfx/
 ### Core Dependencies (Git Submodules)
 - **Eigen 3.4+**: Linear algebra library
 - **pugixml**: Lightweight XML parser
-- **CppAD**: Automatic differentiation library
 - **DaQP**: Quadratic programming solver
 - **Google Test**: Unit testing framework
 
@@ -352,7 +351,7 @@ cmake --build build --target ik_benchmarks -j
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
 │  │ URDF Parser  │→ │   Forward    │→ │   Jacobian   │     │
 │  │  (pugixml)   │  │  Kinematics  │  │ Computation  │     │
-│  └──────────────┘  │   (Eigen)    │  │   (CppAD)    │     │
+│  └──────────────┘  │   (Eigen)    │  │ (Analytical) │     │
 │                     └──────────────┘  └──────────────┘     │
 │                            ↓                  ↓             │
 │                     ┌──────────────────────────────┐       │
@@ -381,9 +380,9 @@ T_end = T_base × T_joint1 × T_joint2 × ... × T_jointn
 ```
 
 ### Jacobian Computation
-Uses CppAD automatic differentiation to compute the Jacobian matrix:
-- Tape the forward kinematics computation once
-- Efficiently evaluate Jacobian for different joint configurations
+Uses geometric methods to compute the analytical Jacobian matrix:
+- Efficient closed-form computation
+- Supports both revolute and prismatic joints
 
 ### Inverse Kinematics (SQP-based)
 Sequential Quadratic Programming approach:
@@ -449,7 +448,7 @@ If you use urdfx in your research, please cite:
 
 - ✅ URDF parsing
 - ✅ Forward kinematics
-- ✅ Jacobian computation with automatic differentiation
+- ✅ Jacobian computation with analytical method
 - ✅ Inverse kinematics with SQP solver
 - ✅ Python bindings
 - ✅ WebAssembly support
@@ -468,6 +467,5 @@ For questions, issues, or contributions:
 ## Acknowledgments
 
 - Eigen for fast linear algebra
-- CppAD for automatic differentiation
 - DaQP for efficient QP solving
 - The robotics community for URDF standardization

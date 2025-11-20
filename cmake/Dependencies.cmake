@@ -35,59 +35,7 @@ if(NOT pugixml_FOUND)
 endif()
 message(STATUS "Using pugixml")
 
-# CppAD
-find_package(CppAD QUIET)
-if(NOT CppAD_FOUND)
-    message(STATUS "CppAD not found on system, using submodule")
-    set(cppad_prefix ${PROJECT_SOURCE_DIR}/third_party/CppAD)
-    
-    # CppAD is header-only for basic usage, so we can just add include path
-    add_library(cppad_lib INTERFACE)
-    target_include_directories(cppad_lib INTERFACE ${cppad_prefix}/include)
-    
-    # Generate configure.hpp from configure.hpp.in if it doesn't exist
-    set(CPPAD_CONFIGURE_HPP ${cppad_prefix}/include/cppad/configure.hpp)
-    if(NOT EXISTS ${CPPAD_CONFIGURE_HPP})
-        message(STATUS "Generating cppad/configure.hpp")
-        
-        # Set required CMake variables for CppAD configuration
-        set(cppad_link_flags_has_m32 0)
-        set(compiler_has_conversion_warn 0)
-        set(cppad_debug_and_release_01 0)
-        set(use_cplusplus_2017_ok 1)
-        set(cppad_version "20240000.0")
-        set(cppad_has_adolc 0)
-        set(cppad_has_colpack 0)
-        set(cppad_has_eigen 0)
-        set(cppad_has_ipopt 0)
-        set(cppad_deprecated_01 0)
-        set(cppad_boostvector 0)
-        set(cppad_cppadvector 1)
-        set(cppad_stdvector 0)
-        set(cppad_eigenvector 0)
-        set(cppad_has_gettimeofday 0)
-        set(cppad_tape_addr_type "size_t")
-        set(cppad_is_same_tape_addr_type_size_t 1)
-        set(cppad_tape_id_type "size_t")
-        set(cppad_max_num_threads 48)
-        set(cppad_has_mkstemp 0)
-        set(cppad_has_tmpnam_s 1)
-        set(cppad_c_compiler_cmd "cl")
-        set(cppad_c_compiler_gnu_flags 0)
-        set(cppad_c_compiler_msvc_flags 1)
-        set(cppad_is_same_unsigned_int_size_t 0)
-        set(cppad_padding_block_t "")
-        
-        # Read and configure the template
-        file(READ ${cppad_prefix}/include/cppad/configure.hpp.in CONFIGURE_CONTENT)
-        string(CONFIGURE "${CONFIGURE_CONTENT}" CONFIGURED_CONTENT @ONLY)
-        file(WRITE ${CPPAD_CONFIGURE_HPP} "${CONFIGURED_CONTENT}")
-    endif()
-    
-    # Create alias target
-    add_library(CppAD::CppAD ALIAS cppad_lib)
-endif()
-message(STATUS "Using CppAD")
+# CppAD section removed
 
 # DaQP
 # DaQP doesn't have standard CMake config, so we build from submodule

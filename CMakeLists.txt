@@ -58,7 +58,7 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic -Werror)
     add_compile_options(-Wno-unused-parameter)
     add_compile_options(-Wno-empty-body)
-    # Enable __declspec support for Emscripten (needed for CppAD)
+    # Enable __declspec support for Emscripten
     if(EMSCRIPTEN)
         add_compile_options(-fdeclspec)
         # Emscripten doesn't support dllimport/dllexport, ignore the attributes

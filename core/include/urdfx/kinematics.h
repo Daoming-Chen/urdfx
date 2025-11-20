@@ -12,11 +12,6 @@
 #include <stdexcept>
 #include <unordered_map>
 
-namespace CppAD {
-    template <class Base, class RecBase>
-    class ADFun;
-}
-
 namespace urdfx {
 
 /**
@@ -174,19 +169,6 @@ private:
 };
 
 /**
- * @brief Scalar-agnostic forward kinematics helper compatible with CppAD
- */
-class ADForwardKinematics {
-public:
-    ADForwardKinematics() = default;
-
-    template <typename Scalar>
-    Eigen::Transform<Scalar, 3, Eigen::Isometry> compute(
-        const KinematicChain& chain,
-        const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& joint_angles) const;
-};
-
-/**
  * @brief Jacobian representation options
  */
 enum class JacobianType {
@@ -195,10 +177,15 @@ enum class JacobianType {
 };
 
 /**
- * @brief Automatic differentiation-powered Jacobian computation and metrics
+ * @brief Analytical Jacobian computation and metrics
  */
 class URDFX_API JacobianCalculator {
 public:
+    JacobianCalculator(
+        std::shared_ptr<const Robot> robot,
+        const std::string& end_link,
+        const std::string& base_link = "");
+
     // Delete copy operations since this class contains unique_ptr members
     JacobianCalculator(const JacobianCalculator&) = delete;
     JacobianCalculator& operator=(const JacobianCalculator&) = delete;
@@ -206,11 +193,6 @@ public:
     // Allow move operations
     JacobianCalculator(JacobianCalculator&&) = default;
     JacobianCalculator& operator=(JacobianCalculator&&) = default;
-    
-    JacobianCalculator(
-        std::shared_ptr<const Robot> robot,
-        const std::string& end_link,
-        const std::string& base_link = "");
 
     Eigen::MatrixXd compute(
         const Eigen::VectorXd& joint_angles,
@@ -246,40 +228,28 @@ public:
         JacobianType to);
 
 private:
-    struct TapeData {
-        struct TapeDeleter {
-            void operator()(void* ptr) const;
-        };
-        std::unique_ptr<void, TapeDeleter> tape;
-        size_t dof = 0;
+    struct JointFrameCache {
+        std::vector<Eigen::Vector3d> z_world;  // Joint axes in world frame
+        std::vector<Eigen::Vector3d> p_world;  // Joint positions in world frame
+        Eigen::Vector3d p_ee;                  // End-effector position
+        
+        void resize(size_t n) {
+            if (z_world.size() != n) {
+                z_world.resize(n);
+                p_world.resize(n);
+            }
+        }
     };
 
     std::string resolveLink(const std::string& target_link) const;
     const KinematicChain& ensureChain(const std::string& link) const;
-    const ForwardKinematics& ensureForwardKinematics(const std::string& link) const;
-    TapeData& ensureTape(const std::string& link) const;
+    JointFrameCache& ensureCache(const std::string& link, size_t dof) const;
 
-    Eigen::MatrixXd buildSpatialJacobian(
-        const Eigen::MatrixXd& raw_pose_jac,
-        const Transform& pose) const;
-
-    Eigen::MatrixXd buildSpatialJacobianDerivative(
-        const Eigen::MatrixXd& raw_pose_jac_dot,
-        const Transform& pose) const;
-
-    Eigen::MatrixXd convertIfNeeded(
-        const Eigen::MatrixXd& spatial_jac,
-        const Transform& pose,
-        JacobianType type) const;
-
-    Eigen::MatrixXd convertDerivativeIfNeeded(
-        const Eigen::MatrixXd& spatial_jac,
-        const Eigen::MatrixXd& spatial_jac_dot,
-        const Transform& pose,
-        const Eigen::VectorXd& joint_velocities,
-        JacobianType type) const;
-
-    static CppAD::ADFun<double, double>* getTapePointer(const TapeData& data);
+    void computeAnalyticalJacobian(
+        const Eigen::VectorXd& joint_angles,
+        const KinematicChain& chain,
+        JointFrameCache& cache,
+        Eigen::MatrixXd& J_out) const;
 
     std::shared_ptr<const Robot> robot_;
     std::string base_link_;
@@ -287,53 +257,7 @@ private:
 
     mutable std::unordered_map<std::string, std::unique_ptr<KinematicChain>> chain_cache_;
     mutable std::unordered_map<std::string, std::unique_ptr<ForwardKinematics>> fk_cache_;
-    mutable std::unordered_map<std::string, std::unique_ptr<TapeData>> tape_cache_;
-    ADForwardKinematics ad_fk_;
+    mutable std::unordered_map<std::string, JointFrameCache> frame_cache_;
 };
-
-template <typename Scalar>
-Eigen::Transform<Scalar, 3, Eigen::Isometry> ADForwardKinematics::compute(
-    const KinematicChain& chain,
-    const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& joint_angles) const
-{
-    if (static_cast<size_t>(joint_angles.size()) != chain.getNumJoints()) {
-        throw std::invalid_argument("Joint vector size does not match chain DOF");
-    }
-
-    Eigen::Transform<Scalar, 3, Eigen::Isometry> T =
-        Eigen::Transform<Scalar, 3, Eigen::Isometry>::Identity();
-
-    const auto& joints = chain.getJoints();
-    for (size_t i = 0; i < joints.size(); ++i) {
-        const auto& joint = joints[i];
-        const auto& origin = joint->getOrigin().getTransform();
-
-        T = T * origin.cast<Scalar>();
-
-        Eigen::Transform<Scalar, 3, Eigen::Isometry> joint_tf =
-            Eigen::Transform<Scalar, 3, Eigen::Isometry>::Identity();
-        Scalar q = joint_angles[i];
-        Eigen::Matrix<Scalar, 3, 1> axis = joint->getAxis().cast<Scalar>();
-
-        switch (joint->getType()) {
-            case JointType::Revolute:
-            case JointType::Continuous: {
-                Eigen::AngleAxis<Scalar> rotation(q, axis);
-                joint_tf.linear() = rotation.toRotationMatrix();
-                break;
-            }
-            case JointType::Prismatic: {
-                joint_tf.translation() = axis * q;
-                break;
-            }
-            default:
-                break;
-        }
-
-        T = T * joint_tf;
-    }
-
-    return T;
-}
 
 } // namespace urdfx

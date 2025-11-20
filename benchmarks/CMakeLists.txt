@@ -2,7 +2,12 @@ add_executable(ik_benchmarks
     ik_benchmarks.cpp
 )
 
+add_executable(jacobian_benchmarks
+    jacobian_benchmarks.cpp
+)
+
 target_compile_features(ik_benchmarks PRIVATE cxx_std_20)
+target_compile_features(jacobian_benchmarks PRIVATE cxx_std_20)
 
 target_link_libraries(ik_benchmarks
     PRIVATE
@@ -12,7 +17,20 @@ target_link_libraries(ik_benchmarks
         spdlog::spdlog
 )
 
+target_link_libraries(jacobian_benchmarks
+    PRIVATE
+        urdfx
+        benchmark::benchmark
+        benchmark::benchmark_main
+        spdlog::spdlog
+)
+
 target_compile_definitions(ik_benchmarks
+    PRIVATE
+    URDFX_UR5_URDF_PATH="${PROJECT_SOURCE_DIR}/examples/models/ur5/ur5e.urdf"
+)
+
+target_compile_definitions(jacobian_benchmarks
     PRIVATE
     URDFX_UR5_URDF_PATH="${PROJECT_SOURCE_DIR}/examples/models/ur5/ur5e.urdf"
 )

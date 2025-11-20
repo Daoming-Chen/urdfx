@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>URDFX IK Benchmark Visualization</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -20,7 +19,7 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             background: white;
             border-radius: 16px;
@@ -40,41 +39,6 @@
             text-align: center;
             margin-bottom: 40px;
             font-size: 1.1em;
-        }
-
-        .system-info {
-            background: #f7fafc;
-            border-left: 4px solid #667eea;
-            padding: 20px;
-            margin-bottom: 30px;
-            border-radius: 8px;
-        }
-
-        .system-info h2 {
-            color: #2d3748;
-            font-size: 1.3em;
-            margin-bottom: 15px;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-        }
-
-        .info-item {
-            display: flex;
-            align-items: center;
-        }
-
-        .info-label {
-            font-weight: 600;
-            color: #4a5568;
-            margin-right: 8px;
-        }
-
-        .info-value {
-            color: #718096;
         }
 
         .file-input-section {
@@ -106,26 +70,6 @@
             display: none;
         }
 
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-
-        .chart-container {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .chart-container h3 {
-            color: #2d3748;
-            margin-bottom: 15px;
-            font-size: 1.2em;
-        }
-
         .table-container {
             overflow-x: auto;
             margin-top: 30px;
@@ -152,8 +96,7 @@
 
         th {
             font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.85em;
+            font-size: 0.9em;
             letter-spacing: 0.05em;
         }
 
@@ -203,14 +146,6 @@
             h1 {
                 font-size: 1.8em;
             }
-
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
         }
     </style>
 </head>
@@ -234,7 +169,7 @@
         let benchmarkData = null;
 
         // Load default data
-        fetch('ik_benchmarks_win.json')
+        fetch('ik_benchmarks_20251120.json')
             .then(response => response.json())
             .then(data => {
                 benchmarkData = data;
@@ -268,68 +203,8 @@
             const content = document.getElementById('content');
             content.innerHTML = '';
 
-            // System Info
-            const systemInfo = document.createElement('div');
-            systemInfo.className = 'system-info';
-            systemInfo.innerHTML = `
-                <h2>📊 System Information</h2>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <span class="info-label">Host:</span>
-                        <span class="info-value">${benchmarkData.context.host_name}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">CPUs:</span>
-                        <span class="info-value">${benchmarkData.context.num_cpus} @ ${benchmarkData.context.mhz_per_cpu} MHz</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Date:</span>
-                        <span class="info-value">${new Date(benchmarkData.context.date).toLocaleString()}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Build Type:</span>
-                        <span class="info-value">${benchmarkData.context.library_build_type}</span>
-                    </div>
-                </div>
-            `;
-            content.appendChild(systemInfo);
-
             // Process benchmark data
             const benchmarks = processBenchmarkData(benchmarkData.benchmarks);
-
-            // Charts
-            const chartsDiv = document.createElement('div');
-            chartsDiv.className = 'charts-grid';
-            chartsDiv.innerHTML = `
-                <div class="chart-container">
-                    <h3>⏱️ Execution Time Comparison</h3>
-                    <canvas id="timeChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <h3>🔄 Iterations Per Solve</h3>
-                    <canvas id="iterationsChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <h3>✅ Success Rate</h3>
-                    <canvas id="successChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <h3>📏 Position Error (mm)</h3>
-                    <canvas id="posErrorChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <h3>🔄 Rotation Error (degrees)</h3>
-                    <canvas id="rotErrorChart"></canvas>
-                </div>
-            `;
-            content.appendChild(chartsDiv);
-
-            // Create charts
-            createTimeChart(benchmarks);
-            createIterationsChart(benchmarks);
-            createSuccessChart(benchmarks);
-            createPositionErrorChart(benchmarks);
-            createRotationErrorChart(benchmarks);
 
             // Table
             const tableDiv = document.createElement('div');
@@ -352,194 +227,11 @@
                 const avg = {
                     name: name,
                     real_time: runs.reduce((s, r) => s + r.real_time, 0) / runs.length,
-                    cpu_time: runs.reduce((s, r) => s + r.cpu_time, 0) / runs.length,
                     iterations_per_solve: runs.reduce((s, r) => s + r.iterations_per_solve, 0) / runs.length,
-                    success_rate: runs.reduce((s, r) => s + r.success_rate, 0) / runs.length,
                     avg_position_error_mm: runs.reduce((s, r) => s + r.avg_position_error_mm, 0) / runs.length,
                     avg_rotation_error_deg: runs.reduce((s, r) => s + r.avg_rotation_error_deg, 0) / runs.length
                 };
                 return avg;
-            });
-        }
-
-        function createTimeChart(benchmarks) {
-            const ctx = document.getElementById('timeChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: benchmarks.map(b => b.name.replace('BM_IK_', '')),
-                    datasets: [{
-                        label: 'Real Time (μs)',
-                        data: benchmarks.map(b => b.real_time),
-                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
-                        borderColor: 'rgba(102, 126, 234, 1)',
-                        borderWidth: 2
-                    }, {
-                        label: 'CPU Time (μs)',
-                        data: benchmarks.map(b => b.cpu_time),
-                        backgroundColor: 'rgba(118, 75, 162, 0.8)',
-                        borderColor: 'rgba(118, 75, 162, 1)',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top'
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Time (μs)'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function createIterationsChart(benchmarks) {
-            const ctx = document.getElementById('iterationsChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: benchmarks.map(b => b.name.replace('BM_IK_', '')),
-                    datasets: [{
-                        label: 'Iterations Per Solve',
-                        data: benchmarks.map(b => b.iterations_per_solve),
-                        backgroundColor: 'rgba(72, 187, 120, 0.8)',
-                        borderColor: 'rgba(72, 187, 120, 1)',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Iterations'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function createSuccessChart(benchmarks) {
-            const ctx = document.getElementById('successChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: benchmarks.map(b => b.name.replace('BM_IK_', '')),
-                    datasets: [{
-                        label: 'Success Rate (%)',
-                        data: benchmarks.map(b => b.success_rate),
-                        backgroundColor: [
-                            'rgba(72, 187, 120, 0.8)',
-                            'rgba(102, 126, 234, 0.8)',
-                            'rgba(237, 137, 54, 0.8)',
-                            'rgba(229, 62, 62, 0.8)'
-                        ],
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-        }
-
-        function createPositionErrorChart(benchmarks) {
-            const ctx = document.getElementById('posErrorChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: benchmarks.map(b => b.name.replace('BM_IK_', '')),
-                    datasets: [{
-                        label: 'Position Error (mm)',
-                        data: benchmarks.map(b => b.avg_position_error_mm),
-                        backgroundColor: 'rgba(237, 137, 54, 0.2)',
-                        borderColor: 'rgba(237, 137, 54, 1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Error (mm)'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function createRotationErrorChart(benchmarks) {
-            const ctx = document.getElementById('rotErrorChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: benchmarks.map(b => b.name.replace('BM_IK_', '')),
-                    datasets: [{
-                        label: 'Rotation Error (degrees)',
-                        data: benchmarks.map(b => b.avg_rotation_error_deg),
-                        backgroundColor: 'rgba(229, 62, 62, 0.2)',
-                        borderColor: 'rgba(229, 62, 62, 1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Error (degrees)'
-                            }
-                        }
-                    }
-                }
             });
         }
 
@@ -549,10 +241,8 @@
                     <thead>
                         <tr>
                             <th>Benchmark</th>
-                            <th>Real Time (μs)</th>
-                            <th>CPU Time (μs)</th>
+                            <th>Execution Time (Speed) (μs)</th>
                             <th>Iterations/Solve</th>
-                            <th>Success Rate</th>
                             <th>Position Error (mm)</th>
                             <th>Rotation Error (°)</th>
                         </tr>
@@ -565,9 +255,7 @@
                     <tr>
                         <td><strong>${b.name.replace('BM_IK_', '')}</strong></td>
                         <td><span class="metric-badge metric-time">${b.real_time.toFixed(2)}</span></td>
-                        <td><span class="metric-badge metric-time">${b.cpu_time.toFixed(2)}</span></td>
                         <td>${b.iterations_per_solve.toFixed(2)}</td>
-                        <td><span class="metric-badge metric-success">${b.success_rate.toFixed(1)}%</span></td>
                         <td><span class="metric-badge ${b.avg_position_error_mm < 0.1 ? 'metric-success' : 'metric-error'}">${b.avg_position_error_mm.toFixed(4)}</span></td>
                         <td><span class="metric-badge ${b.avg_rotation_error_deg < 0.01 ? 'metric-success' : 'metric-error'}">${b.avg_rotation_error_deg.toFixed(6)}</span></td>
                     </tr>
