@@ -26,6 +26,8 @@ set_target_properties(urdfx PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
     PUBLIC_HEADER "${URDFX_HEADERS}"
+    INSTALL_RPATH "$ORIGIN"
+    BUILD_RPATH "$ORIGIN"
 )
 
 # Include directories
