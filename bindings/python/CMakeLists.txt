@@ -32,23 +32,37 @@ set_target_properties(_urdfx PROPERTIES
     BUILD_WITH_INSTALL_RPATH FALSE
 )
 
-# For editable/development installs, copy all needed .so files to the Python package directory
+# For editable/development installs, copy all needed .so/.dll files to the Python package directory
 # so the extension module can find them without needing to set LD_LIBRARY_PATH
-add_custom_command(TARGET _urdfx POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE:urdfx>
-        ${CMAKE_CURRENT_SOURCE_DIR}/urdfx/$<TARGET_FILE_NAME:urdfx>
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_SONAME_FILE:urdfx>
-        ${CMAKE_CURRENT_SOURCE_DIR}/urdfx/$<TARGET_SONAME_FILE_NAME:urdfx>
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE:pugixml-shared>
-        ${CMAKE_CURRENT_SOURCE_DIR}/urdfx/$<TARGET_FILE_NAME:pugixml-shared>
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_SONAME_FILE:pugixml-shared>
-        ${CMAKE_CURRENT_SOURCE_DIR}/urdfx/$<TARGET_SONAME_FILE_NAME:pugixml-shared>
-    COMMENT "Copying shared libraries to Python package directory for editable install"
-)
+if(WIN32)
+    # Windows uses DLL files, no SONAME concept
+    add_custom_command(TARGET _urdfx POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:urdfx>
+            ${CMAKE_CURRENT_SOURCE_DIR}/urdfx/$<TARGET_FILE_NAME:urdfx>
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:pugixml-shared>
+            ${CMAKE_CURRENT_SOURCE_DIR}/urdfx/$<TARGET_FILE_NAME:pugixml-shared>
+        COMMENT "Copying shared libraries to Python package directory for editable install"
+    )
+else()
+    # Unix-like systems use SONAME
+    add_custom_command(TARGET _urdfx POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:urdfx>
+            ${CMAKE_CURRENT_SOURCE_DIR}/urdfx/$<TARGET_FILE_NAME:urdfx>
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_SONAME_FILE:urdfx>
+            ${CMAKE_CURRENT_SOURCE_DIR}/urdfx/$<TARGET_SONAME_FILE_NAME:urdfx>
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:pugixml-shared>
+            ${CMAKE_CURRENT_SOURCE_DIR}/urdfx/$<TARGET_FILE_NAME:pugixml-shared>
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_SONAME_FILE:pugixml-shared>
+            ${CMAKE_CURRENT_SOURCE_DIR}/urdfx/$<TARGET_SONAME_FILE_NAME:pugixml-shared>
+        COMMENT "Copying shared libraries to Python package directory for editable install"
+    )
+endif()
 
 # Installation rules
 install(TARGETS _urdfx

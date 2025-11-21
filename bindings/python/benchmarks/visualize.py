@@ -22,22 +22,44 @@ def extract_metrics(benchmarks):
         
         if len(parts) < 3:
             continue
-            
-        bench_type = parts[1]
+        
+        bench_type_prefix = parts[0]  # BM_MixedChainIK, BM_MixedChainIK_ColdStart, etc.
         dof = int(parts[2])
         
-        if bench_type not in results:
+        # Map the benchmark type to our result keys
+        if bench_type_prefix not in results:
             continue
         
-        results[bench_type][dof] = {
-            'time_ms': bm.get('real_time', 0),
-            'success_rate': bm.get('success_rate', 0),
-            'avg_iter': bm.get('avg_iter', 0),
-            'avg_pos_err_mm': bm.get('avg_pos_err_mm', 0),
-            'avg_rot_err_deg': bm.get('avg_rot_err_deg', 0),
-            'avg_rev_err_deg': bm.get('avg_rev_err_deg', 0),
-            'avg_pris_err_mm': bm.get('avg_pris_err_mm', 0),
-        }
+        # For each DOF, aggregate or average across different types
+        if dof not in results[bench_type_prefix]:
+            results[bench_type_prefix][dof] = {
+                'time_ms': bm.get('real_time', 0),
+                'success_rate': bm.get('success_rate', 0),
+                'avg_iter': bm.get('avg_iter', 0),
+                'avg_pos_err_mm': bm.get('avg_pos_err_mm', 0),
+                'avg_rot_err_deg': bm.get('avg_rot_err_deg', 0),
+                'avg_rev_err_deg': bm.get('avg_rev_err_deg', 0),
+                'avg_pris_err_mm': bm.get('avg_pris_err_mm', 0),
+                'count': 1
+            }
+        else:
+            # Average with existing data
+            existing = results[bench_type_prefix][dof]
+            count = existing['count']
+            existing['time_ms'] = (existing['time_ms'] * count + bm.get('real_time', 0)) / (count + 1)
+            existing['success_rate'] = (existing['success_rate'] * count + bm.get('success_rate', 0)) / (count + 1)
+            existing['avg_iter'] = (existing['avg_iter'] * count + bm.get('avg_iter', 0)) / (count + 1)
+            existing['avg_pos_err_mm'] = (existing['avg_pos_err_mm'] * count + bm.get('avg_pos_err_mm', 0)) / (count + 1)
+            existing['avg_rot_err_deg'] = (existing['avg_rot_err_deg'] * count + bm.get('avg_rot_err_deg', 0)) / (count + 1)
+            existing['avg_rev_err_deg'] = (existing['avg_rev_err_deg'] * count + bm.get('avg_rev_err_deg', 0)) / (count + 1)
+            existing['avg_pris_err_mm'] = (existing['avg_pris_err_mm'] * count + bm.get('avg_pris_err_mm', 0)) / (count + 1)
+            existing['count'] = count + 1
+    
+    # Remove the count field from final results
+    for bench_type in results:
+        for dof in results[bench_type]:
+            if 'count' in results[bench_type][dof]:
+                del results[bench_type][dof]['count']
     
     return results
 
