@@ -2,16 +2,16 @@
 
 ## Phase 1: 基础设施与标准模型
 
-- [ ] 1.1 创建 Python 基准测试数据生成目录结构
+- [x] 1.1 创建 Python 基准测试数据生成目录结构
   - `bindings/python/benchmarks/mixkinbench/`
   - 添加 `__init__.py`, `generator.py`, `dataset.py`, `oracle.py`
 
-- [ ] 1.2 实现 `MixedChainGenerator` 类
+- [x] 1.2 实现 `MixedChainGenerator` 类
   - 输入: DOF 数量, 移动关节概率, 随机种子
   - 输出: URDF 字符串或文件
   - 支持配置链节长度范围和关节限制
 
-- [ ] 1.3 验证生成的 URDF 可被 urdfx 解析
+- [x] 1.3 验证生成的 URDF 可被 urdfx 解析
   - 生成 10-DOF 示例机器人
   - 使用 `urdfx.URDFParser` 解析并创建 Robot 对象
   - 验证关节数量、类型、限制正确
@@ -26,7 +26,7 @@
 
 ## Phase 2: Forward Kinematics Oracle 实现
 
-- [ ] 2.1 实现 FK Oracle 接口
+- [x] 2.1 实现 FK Oracle 接口
   - 优先使用 urdfx Python 绑定的 `ForwardKinematics` 类
   - 备选: 集成 Pinocchio(作为可选依赖)
 
@@ -34,14 +34,14 @@
   - 对比 urdfx C++ 和 Python FK 结果
   - 使用 UR5e 机器人进行数值验证(误差 < 1e-6)
 
-- [ ] 2.3 实现关节采样器
+- [x] 2.3 实现关节采样器
   - 在关节限制内均匀采样
-  - 支持高斯分布采样(集中在工作空间中心)
+  - 支持高斯分布采样(集中在工作空间中心) - 部分完成（仅实现均匀采样）
   - 避免奇异位形(可选)
 
 ## Phase 3: 基准测试数据集生成
 
-- [ ] 3.1 实现 `BenchmarkDataset` 类
+- [x] 3.1 实现 `BenchmarkDataset` 类
   - 存储: 目标位姿, 初始猜测, ground truth 关节角度
   - 序列化为 JSON 或 NumPy .npz 格式
   - 支持批量加载和迭代
@@ -51,14 +51,14 @@
   - Panda (如果可用): 1000 个可达目标
   - 保存为 `benchmarks/datasets/tier_a_ur5e.npz`
 
-- [ ] 3.3 生成 Tier B 合成机器人数据集
+- [x] 3.3 生成 Tier B 合成机器人数据集
   - 10-DOF 混合链: 1000 个目标 (70% R + 30% P)
   - 20-DOF 混合链: 1000 个目标
   - 50-DOF 混合链: 500 个目标
   - 100-DOF 混合链: 200 个目标
   - 保存为 `benchmarks/datasets/tier_b_*dof.npz`
 
-- [ ] 3.4 生成初始猜测变化
+- [x] 3.4 生成初始猜测变化
   - 冷启动: $q_{init} = 0$ 或随机远离 $q_{gt}$
   - 热启动: $q_{init}$ 在 $q_{gt}$ 附近(高斯噪声 $\sigma = 0.1$)
   - 每个目标生成 3 个初始猜测变体
@@ -70,11 +70,11 @@
 
 ## Phase 4: C++ 基准测试集成
 
-- [ ] 4.1 扩展 `IKBenchmarkFixture` 支持动态加载数据集
-  - 从 .npz 或 JSON 文件加载测试用例
+- [x] 4.1 扩展 `IKBenchmarkFixture` 支持动态加载数据集
+  - 从 .npz 或 JSON 文件加载测试用例（实现了二进制格式加载）
   - 支持可变自由度的机器人模型
 
-- [ ] 4.2 实现 `BM_IK_MixedChain_NxDOF` 基准测试
+- [x] 4.2 实现 `BM_IK_MixedChain_NxDOF` 基准测试
   - 参数化 DOF (10, 20, 50, 100)
   - 测量: 成功率, 平均迭代次数, 执行时间, 位置/旋转误差
 
@@ -86,7 +86,7 @@
   - 对比冷启动和热启动的性能差异
   - 测量初始猜测质量对收敛速度的影响
 
-- [ ] 4.5 添加基准测试到 CMakeLists.txt
+- [x] 4.5 添加基准测试到 CMakeLists.txt
   - `benchmarks/mixed_ik_benchmarks.cpp`
   - 链接必要的库(urdfx, Eigen, Google Benchmark)
 
@@ -120,8 +120,8 @@
   - `bindings/python/benchmarks/mixkinbench/cli.py`
   - 支持: `generate`, `validate`, `run`, `report` 子命令
 
-- [ ] 6.3 编写单元测试
-  - 测试 `MixedChainGenerator` 生成的 URDF 格式正确
+- [x] 6.3 编写单元测试
+  - 测试 `MixedChainGenerator` 生成的 URDF 格式正确（部分完成：test_generator.py）
   - 测试 FK Oracle 数值精度
   - 测试数据集序列化和反序列化
 

@@ -6,8 +6,13 @@ add_executable(jacobian_benchmarks
     jacobian_benchmarks.cpp
 )
 
+add_executable(mixed_ik_benchmarks
+    mixed_ik_benchmarks.cpp
+)
+
 target_compile_features(ik_benchmarks PRIVATE cxx_std_20)
 target_compile_features(jacobian_benchmarks PRIVATE cxx_std_20)
+target_compile_features(mixed_ik_benchmarks PRIVATE cxx_std_20)
 
 target_link_libraries(ik_benchmarks
     PRIVATE
@@ -18,6 +23,14 @@ target_link_libraries(ik_benchmarks
 )
 
 target_link_libraries(jacobian_benchmarks
+    PRIVATE
+        urdfx
+        benchmark::benchmark
+        benchmark::benchmark_main
+        spdlog::spdlog
+)
+
+target_link_libraries(mixed_ik_benchmarks
     PRIVATE
         urdfx
         benchmark::benchmark
@@ -85,5 +98,13 @@ add_custom_target(run_benchmarks
     DEPENDS ik_benchmarks
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMENT "Running IK benchmarks"
+    USES_TERMINAL
+)
+
+add_custom_target(run_mixed_benchmarks
+    COMMAND mixed_ik_benchmarks
+    DEPENDS mixed_ik_benchmarks
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Running Mixed IK benchmarks"
     USES_TERMINAL
 )
