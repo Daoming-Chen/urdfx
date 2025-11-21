@@ -63,3 +63,20 @@ class JointSampler:
         
         return self.rng.uniform(lower, upper, size=(n_samples, self.dof))
 
+    def sample_gaussian(self, n_samples: int = 1, sigma: float = 0.5) -> np.ndarray:
+        """
+        Sample N random configurations using Gaussian distribution centered at the middle of the range.
+        """
+        lower = self.limits[:, 0]
+        upper = self.limits[:, 1]
+        center = (lower + upper) / 2.0
+        range_width = upper - lower
+        
+        # Scale sigma by range width
+        std_dev = range_width * sigma
+        
+        samples = self.rng.normal(center, std_dev, size=(n_samples, self.dof))
+        
+        # Clip to limits
+        return np.clip(samples, lower, upper)
+

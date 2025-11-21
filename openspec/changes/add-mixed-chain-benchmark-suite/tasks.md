@@ -16,7 +16,7 @@
   - 使用 `urdfx.URDFParser` 解析并创建 Robot 对象
   - 验证关节数量、类型、限制正确
 
-- [ ] 1.4 添加可视化验证工具(可选)
+- [x] 1.4 添加可视化验证工具(可选)
   - 使用 PyBullet 或 Matplotlib 显示生成的机器人
   - 验证链节连接和几何合理性
 
@@ -30,13 +30,13 @@
   - 优先使用 urdfx Python 绑定的 `ForwardKinematics` 类
   - 备选: 集成 Pinocchio(作为可选依赖)
 
-- [ ] 2.2 验证 FK Oracle 准确性
+- [x] 2.2 验证 FK Oracle 准确性
   - 对比 urdfx C++ 和 Python FK 结果
   - 使用 UR5e 机器人进行数值验证(误差 < 1e-6)
 
 - [x] 2.3 实现关节采样器
   - 在关节限制内均匀采样
-  - 支持高斯分布采样(集中在工作空间中心) - 部分完成（仅实现均匀采样）
+  - 支持高斯分布采样(集中在工作空间中心)
   - 避免奇异位形(可选)
 
 ## Phase 3: 基准测试数据集生成
@@ -63,7 +63,7 @@
   - 热启动: $q_{init}$ 在 $q_{gt}$ 附近(高斯噪声 $\sigma = 0.1$)
   - 每个目标生成 3 个初始猜测变体
 
-- [ ] 3.5 生成不可达目标数据集(可选)
+- [x] 3.5 生成不可达目标数据集(可选)
   - 目标位于工作空间边缘或外部
   - 用于测试"最接近解"行为
   - 保存为 `benchmarks/datasets/unreachable_*.npz`
@@ -78,11 +78,11 @@
   - 参数化 DOF (10, 20, 50, 100)
   - 测量: 成功率, 平均迭代次数, 执行时间, 位置/旋转误差
 
-- [ ] 4.3 实现 `BM_IK_JointTypeSensitivity` 基准测试
+- [x] 4.3 实现 `BM_IK_JointTypeSensitivity` 基准测试
   - 分别统计旋转关节和移动关节的误差
   - 计算关节类型对收敛性的影响
 
-- [ ] 4.4 实现 `BM_IK_ColdVsWarmStart` 基准测试
+- [x] 4.4 实现 `BM_IK_ColdVsWarmStart` 基准测试
   - 对比冷启动和热启动的性能差异
   - 测量初始猜测质量对收敛速度的影响
 
@@ -92,11 +92,11 @@
 
 ## Phase 5: 报告生成与可视化
 
-- [ ] 5.1 实现基准测试结果解析器(Python)
+- [x] 5.1 实现基准测试结果解析器(Python)
   - 读取 Google Benchmark JSON 输出
   - 提取关键指标并统计分析
 
-- [ ] 5.2 生成 Markdown 格式报告
+- [x] 5.2 生成 Markdown 格式报告
   - 包含表格: DOF vs 成功率 vs 时间
   - 包含图表: 收敛曲线, 误差分布
   - 保存为 `benchmarks/results/mixkinbench_report_<timestamp>.md`
@@ -111,12 +111,12 @@
 
 ## Phase 6: 文档与验证
 
-- [ ] 6.1 编写用户指南 `docs/benchmarks/mixkinbench.md`
+- [x] 6.1 编写用户指南 `docs/benchmarks/mixkinbench.md`
   - 快速入门: 如何运行基准测试
   - 数据集格式说明
   - 如何生成自定义机器人
 
-- [ ] 6.2 添加 Python 脚本的命令行接口
+- [x] 6.2 添加 Python 脚本的命令行接口
   - `bindings/python/benchmarks/mixkinbench/cli.py`
   - 支持: `generate`, `validate`, `run`, `report` 子命令
 

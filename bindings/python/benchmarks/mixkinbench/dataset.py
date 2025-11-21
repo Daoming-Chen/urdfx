@@ -195,3 +195,44 @@ class BenchmarkDataset:
                 dof=oracle.dof,
                 metadata={"type": "warm_start", "index": i}
             ))
+
+    def generate_unreachable(self, 
+                           oracle: 'FKOracle', 
+                           sampler: 'JointSampler', 
+                           count: int,
+                           scale_factor: float = 1.5):
+        """
+        Generate dataset with unreachable targets by scaling reachable positions.
+        """
+        q_samples = sampler.sample(count)
+        
+        for i in range(count):
+            q_gt = q_samples[i]
+            pos, rot = oracle.compute_pose(q_gt)
+            
+            # Make unreachable by scaling the position vector from origin
+            # This assumes the base is at (0,0,0). If not, we should subtract base pos first.
+            # For benchmarks, base is usually at identity.
+            
+            pos_vec = np.array(pos)
+            dist = np.linalg.norm(pos_vec)
+            
+            if dist < 1e-6:
+                # If at origin, move to a random direction with large distance
+                # Estimate max reach? Just use a large number like 10.0 meters
+                pos_vec = np.array([10.0, 0.0, 0.0])
+            else:
+                pos_vec = pos_vec * scale_factor
+                
+            # Initial guess: random or zero
+            q_init = np.zeros_like(q_gt)
+            
+            self.add_case(BenchmarkCase(
+                target_pos=pos_vec.tolist(),
+                target_rot=rot.tolist(),
+                initial_guess=q_init.tolist(),
+                ground_truth_q=q_gt.tolist(), # Note: this is NOT the solution for the target, just the seed
+                robot_name=oracle.robot.get_name(),
+                dof=oracle.dof,
+                metadata={"type": "unreachable", "scale": scale_factor, "index": i}
+            ))
