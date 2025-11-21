@@ -1,42 +1,55 @@
-# Python Bindings for urdfx
+# urdfx Python Bindings
 
-## Status: Coming Soon
+Python bindings for the urdfx robotics kinematics library.
 
-Python bindings for the urdfx robotics kinematics library are currently under development.
+## Installation
 
-## Planned Features
+### From Source
 
-- Full access to URDF parsing functionality
-- Forward kinematics computation
-- Inverse kinematics solvers
-- Jacobian computation
-- NumPy-based API for easy integration with scientific Python ecosystem
-
-## Installation (Future)
+Requirements:
+- CMake 3.20+
+- C++20 compiler
+- Python 3.8+
+- NumPy 1.20+
 
 ```bash
-pip install urdfx
+pip install .
 ```
 
-## Basic Usage Example (Future)
+## Usage
 
 ```python
 import urdfx
 import numpy as np
 
-# Parse URDF
-robot = urdfx.parse_urdf("robot.urdf")
+# Load robot
+robot = urdfx.Robot.from_urdf_file("ur5.urdf")
 
-# Compute forward kinematics
-joint_angles = np.array([0.0, 1.57, -1.57, 0.0, 0.0, 0.0])
-pose = robot.forward_kinematics(joint_angles)
+# Forward Kinematics
+fk = urdfx.ForwardKinematics(robot, "tool0")
+q = np.zeros(6)
+pose = fk.compute(q)
+print(f"Position: {pose.translation()}")
 
-# Compute inverse kinematics
-target_pose = np.eye(4)
-target_pose[:3, 3] = [0.5, 0.0, 0.5]  # target position
-solution = robot.inverse_kinematics(target_pose)
+# Inverse Kinematics
+solver = urdfx.SQPIKSolver(robot, "tool0")
+result = solver.solve(pose, np.zeros(6))
+if result.status.converged:
+    print("IK Solution:", result.solution)
+else:
+    print("IK Failed:", result.status.message)
 ```
 
 ## Development
 
-See `openspec/changes/restructure-project-layout/` for the project restructuring plan.
+To build for development (editable install):
+
+```bash
+pip install --no-build-isolation -ve .
+```
+
+## Testing
+
+```bash
+pytest tests/
+```
