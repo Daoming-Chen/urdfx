@@ -1,0 +1,94 @@
+{
+  "context": {
+    "date": "2025-11-22T14:12:50+08:00",
+    "host_name": "Asus4090",
+    "executable": "/home/tim/Dev/urdfx/build/benchmarks/ik_benchmarks",
+    "num_cpus": 24,
+    "mhz_per_cpu": 3187,
+    "cpu_scaling_enabled": false,
+    "caches": [
+      {
+        "type": "Data",
+        "level": 1,
+        "size": 49152,
+        "num_sharing": 2
+      },
+      {
+        "type": "Instruction",
+        "level": 1,
+        "size": 32768,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 2,
+        "size": 1310720,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 3,
+        "size": 31457280,
+        "num_sharing": 24
+      }
+    ],
+    "load_avg": [0.364746,0.182129,0.118164],
+    "library_build_type": "release"
+  },
+  "benchmarks": [
+    {
+      "name": "BM_IK_ColdStart",
+      "family_index": 0,
+      "per_family_instance_index": 0,
+      "run_name": "BM_IK_ColdStart",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 9235,
+      "real_time": 7.3567642772088831e+01,
+      "cpu_time": 7.3567820032485116e+01,
+      "time_unit": "us",
+      "avg_position_error_mm": 2.2661741614860103e-02,
+      "avg_rotation_error_deg": 2.1397573090689418e-03,
+      "iterations_per_solve": 9.5000000000000000e+00,
+      "success_rate": 1.0000000000000000e+02
+    },
+    {
+      "name": "BM_IK_WarmStart",
+      "family_index": 1,
+      "per_family_instance_index": 0,
+      "run_name": "BM_IK_WarmStart",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 19307,
+      "real_time": 3.6298448075813162e+01,
+      "cpu_time": 3.6061283420521058e+01,
+      "time_unit": "us",
+      "avg_position_error_mm": 1.1386390149511208e-01,
+      "avg_rotation_error_deg": 1.6581932623068653e-03,
+      "iterations_per_solve": 4.9999741026570677e+00,
+      "success_rate": 1.0000000000000000e+02
+    },
+    {
+      "name": "BM_IK_Trajectory",
+      "family_index": 2,
+      "per_family_instance_index": 0,
+      "run_name": "BM_IK_Trajectory",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 11631,
+      "real_time": 5.9150894763992277e+01,
+      "cpu_time": 5.9150322844123465e+01,
+      "time_unit": "us",
+      "avg_position_error_mm": 8.6045036469774613e-02,
+      "avg_rotation_error_deg": 5.1034773040647026e-03,
+      "iterations_per_solve": 2.4166917433296078e+00,
+      "success_rate": 1.0000000000000000e+02
+    }
+  ]
+}

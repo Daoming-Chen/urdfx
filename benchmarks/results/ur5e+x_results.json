@@ -1,0 +1,36 @@
+{
+  "robot_name": "ur5e+x",
+  "dof": 7,
+  "total_samples": 1000,
+  "seed": 42,
+  "cold_start_zero": {
+    "cases": 1000,
+    "successes": 951,
+    "failures": 49,
+    "success_rate": 95.1,
+    "avg_time_us": 28.96226299526461,
+    "avg_iterations": 10.983175604626709,
+    "avg_pos_error_mm": 0.00460062821689765,
+    "avg_rot_error": 1.5990438066425346e-05
+  },
+  "cold_start_random": {
+    "cases": 1000,
+    "successes": 785,
+    "failures": 215,
+    "success_rate": 78.5,
+    "avg_time_us": 71.36560499657207,
+    "avg_iterations": 12.977070063694267,
+    "avg_pos_error_mm": 0.008581113893699347,
+    "avg_rot_error": 1.4648308874233222e-05
+  },
+  "warm_start": {
+    "cases": 1000,
+    "successes": 1000,
+    "failures": 0,
+    "success_rate": 100.0,
+    "avg_time_us": 6.190741000864364,
+    "avg_iterations": 3.466,
+    "avg_pos_error_mm": 0.010231926244363764,
+    "avg_rot_error": 1.6740689742543217e-05
+  }
+}
