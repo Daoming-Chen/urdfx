@@ -70,7 +70,7 @@
 **选择的核心指标**:
 1. **Success Rate** (%): $\|FK(q_{sol}) - T_{target}\| < \epsilon$
 2. **Iterations per Solve**: 平均迭代次数
-3. **Execution Time** (ms): 每次求解的平均时间
+3. **Execution Time** (µs): 每次求解的平均时间
 4. **Position Error** (mm): 成功解的平均位置误差
 5. **Rotation Error** (deg): 成功解的平均旋转误差
 6. **Joint Type Sensitivity**: 按旋转/移动关节分组的误差分析
